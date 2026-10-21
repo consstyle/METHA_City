@@ -1,3 +1,6 @@
+'use client';
+
+import { useCity, useCityStoreApi } from '@/features/city/state/CityStoreProvider';
 import { abteilungName } from '@/features/city/model/abteilungen';
 import { CAMPUS_UNITS } from '@/features/city/model/campus';
 import { unitsByDistrict } from '@/features/city/model/hierarchy';
@@ -36,14 +39,23 @@ function Kpis({ m, status }: Readonly<{ m: Messages; status: UnitStatus | undefi
 }
 
 function UnitRow({ m, unit, status }: Readonly<{ m: Messages; unit: UnitDef; status: UnitStatus | undefined }>) {
+  const store = useCityStoreApi();
+  const active = useCity((s) => s.selected === unit.id);
   return (
     <li>
-      <div className={`tree-row level${unit.level}${unit.level === 0 ? ' root' : ''}`} title={m.units[unit.id].role}>
+      <button
+        type="button"
+        className={`tree-row level${unit.level}${unit.level === 0 ? ' root' : ''}${active ? ' active' : ''}`}
+        title={m.units[unit.id].role}
+        aria-pressed={active}
+        data-unit={unit.id}
+        onClick={() => store.getState().select(unit.id)}
+      >
         <small aria-hidden="true">{unit.code}</small>
         {unit.name}
         <span className="sr-only">, {m.units[unit.id].role}</span>
         <Kpis m={m} status={status} />
-      </div>
+      </button>
       {unit.subunits.map((sub) => {
         const dept = status?.departments.find((d) => d.abteilungId === sub.id);
         return (
@@ -88,7 +100,20 @@ export function StructurePanel({ m, result, scenario }: Props) {
           </ul>
         </section>
       ))}
+      <FocusButton m={m} />
       <p className="note">{m.panel.note}</p>
     </>
+  );
+}
+
+function FocusButton({ m }: Readonly<{ m: Messages }>) {
+  const store = useCityStoreApi();
+  return (
+    <button type="button" className="focus-btn" onClick={() => store.getState().focus(store.getState().selected)}>
+      <svg className="ico" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M4 28V12l11-5v21 M15 28V3l13 6v19 M2 28h28 M8 14v2 M8 20v2 M20 10v2 M24 12v2 M20 17v2 M24 19v2 M20 24v4" />
+      </svg>
+      {m.panel.focus}
+    </button>
   );
 }

@@ -35,6 +35,8 @@ const securityHeaders = [
 const config: NextConfig = {
   // La imagen Docker de F6 usa la salida standalone.
   output: process.env.NEXT_OUTPUT_STANDALONE === '1' ? 'standalone' : undefined,
+  // Las pruebas e2e compilan en otra carpeta para no pisar la de `npm run dev`.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   poweredByHeader: false,
   reactStrictMode: true,
   async headers() {

@@ -4,7 +4,10 @@ Centro de control de agentes de METHABAU: una ciudad 3D donde cada edificio es u
 
 - **Plan:** `PLAN-DESARROLLO.md` y `PLAN-MethaCity.md` (carpeta `Methabau_Citi` en OneDrive).
 - **Referencia visual:** `Methabau_Citi/preview/preview.html`.
-- **Fase actual:** F0 (base) y F1 (modelo de la ciudad, contrato de datos y simulador).
+- **Rumbo:** sistema operativo de agentes inspirado en NEXORA (plan v3, `PLAN-DESARROLLO.md`), con el MVP de frontend al final de F5.
+- **Fase actual:** F2 terminada (escena 3D portada de preview.html con React Three Fiber). Siguiente: F3 (sistema y ciudad viva).
+
+> No ejecutes `npm run build` mientras corre `npm run dev`: ambos usan `.next`. Las pruebas e2e usan su propia carpeta.
 
 ## Requisitos
 - Node.js ≥ 22 (`.nvmrc`).
@@ -20,6 +23,7 @@ Centro de control de agentes de METHABAU: una ciudad 3D donde cada edificio es u
 | `npm run lint` | ESLint |
 | `npm test` | pruebas unitarias |
 | `npm run test:coverage` | pruebas con cobertura (mínimo 80 % de líneas, ramas y funciones) |
+| `npm run test:e2e` | pruebas e2e con Playwright (compila en `.next-e2e` y sirve en el puerto 3200; no interfiere con `npm run dev`). La primera vez: `npx playwright install chromium` |
 | `npm run check` | todo lo anterior salvo la compilación |
 
 ## Escenarios del simulador
@@ -38,7 +42,10 @@ src/
   app/                       página y estilos globales (tokens de preview.html)
   components/                cabecera
   features/city/model/       campus.ts (8 unidades, posiciones de preview.html), jerarquía, departamentos
-  features/city/panel/       panel de estructura (provisional en F1)
+  features/city/scene/       escena 3D: builder/ (terreno, arquetipos, vehículos, rutas), cámara, luz
+  features/city/overlay/     controles de cámara, barra de herramientas, leyenda
+  features/city/state/       estado compartido escena ↔ panel (zustand)
+  features/city/panel/       panel de estructura (provisional hasta F3)
   data/                      contrato (zod), agregación departamentos → unidad, carga, simulador
   i18n/                      textos de la interfaz (solo alemán)
   lib/                       fechas en Europe/Zurich, congelado profundo
