@@ -5,14 +5,19 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStore } from 'zustand';
 import { CAMPUS_UNITS } from '@/features/city/model/campus';
+import type { LabelRegistry } from '@/features/city/overlay/labelRegistry';
 import type { CityStore } from '@/features/city/state/cityStore';
+import type { OsStore } from '@/os/osStore';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import { CameraRig } from './CameraRig';
 import { CampusWorld } from './CampusWorld';
+import { LabelProjector } from './LabelProjector';
 import { Lighting, LocalEnvironment } from './Lighting';
 
 interface Props {
   readonly store: CityStore;
+  readonly osStore: OsStore | null;
+  readonly labels: LabelRegistry;
   readonly label: string;
   readonly onReady: () => void;
   readonly onContextLost: () => void;
@@ -45,10 +50,23 @@ function Diagnostics({ store }: Readonly<{ store: CityStore }>) {
   return null;
 }
 
-function SceneContent({ store, onReady, reducedMotion }: Readonly<{ store: CityStore; onReady: () => void; reducedMotion: boolean }>) {
+interface SceneProps {
+  readonly store: CityStore;
+  readonly osStore: OsStore | null;
+  readonly labels: LabelRegistry;
+  readonly onReady: () => void;
+  readonly reducedMotion: boolean;
+}
+
+function SceneContent({ store, osStore, labels, onReady, reducedMotion }: SceneProps) {
   const day = useStore(store, (s) => s.options.day);
   const gl = useThree((s) => s.gl);
   const frames = useRef(0);
+
+  // <html> sobrevive a la navegación entre módulos: la marca se retira al desmontar la escena.
+  useEffect(() => () => {
+    delete document.documentElement.dataset.cityReady;
+  }, []);
 
   // Las sombras son estáticas: se calculan en los primeros fotogramas y al cambiar la luz.
   useFrame(() => {
@@ -64,22 +82,26 @@ function SceneContent({ store, onReady, reducedMotion }: Readonly<{ store: CityS
     <>
       <LocalEnvironment />
       <Lighting day={day} />
-      <CampusWorld store={store} reducedMotion={reducedMotion} />
+      <CampusWorld store={store} osStore={osStore} reducedMotion={reducedMotion} />
       <CameraRig store={store} reducedMotion={reducedMotion} />
+      <LabelProjector store={store} registry={labels} />
       <Diagnostics store={store} />
     </>
   );
 }
 
 /** Lienzo WebGL de la ciudad. Se carga solo en el cliente (`next/dynamic` con ssr: false). */
-export default function CampusCanvas({ store, label, onReady, onContextLost }: Props) {
+export default function CampusCanvas({ store, osStore, labels, label, onReady, onContextLost }: Props) {
   const reducedMotion = useReducedMotion();
+  // En la vista Hierarchie la escena queda oculta: se detiene el bucle de dibujo.
+  const paused = useStore(store, (s) => s.view !== 'city');
   return (
     <Canvas
       className="scene-canvas"
       orthographic
       shadows="soft"
       dpr={[1, 1.75]}
+      frameloop={paused ? 'never' : 'always'}
       gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
       camera={{ manual: true, near: 0.1, far: 180, position: [0, 40, 60] }}
       onCreated={({ gl }) => {
@@ -95,7 +117,7 @@ export default function CampusCanvas({ store, label, onReady, onContextLost }: P
         });
       }}
     >
-      <SceneContent store={store} onReady={onReady} reducedMotion={reducedMotion} />
+      <SceneContent store={store} osStore={osStore} labels={labels} onReady={onReady} reducedMotion={reducedMotion} />
     </Canvas>
   );
 }

@@ -1,7 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRandom, ellipsePoints } from './builder';
-import { dotProgress } from './links';
+import { dotProgress, isRouteActive } from './links';
+
+test('isRouteActive reconoce la delegación por su ruta; la coordinación vale en ambos sentidos', () => {
+  const h = { from: 'avor', to: 'werkhof', kind: 'hierarchy' } as const;
+  const c = { from: 'avor', to: 'bauleitung', kind: 'coordination' } as const;
+  assert.equal(isRouteActive(h, [{ from: 'avor', to: 'werkhof' }]), true);
+  assert.equal(isRouteActive(h, [{ from: 'werkhof', to: 'avor' }]), false);
+  assert.equal(isRouteActive(c, [{ from: 'bauleitung', to: 'avor' }]), true);
+  assert.equal(isRouteActive(c, []), false);
+});
 
 test('createRandom reproduce la secuencia de preview.html (semilla 16)', () => {
   const a = createRandom();

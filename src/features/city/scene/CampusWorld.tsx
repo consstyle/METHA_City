@@ -5,12 +5,15 @@ import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { CAMPUS_UNITS } from '@/features/city/model/campus';
 import { deriveRelations } from '@/features/city/model/hierarchy';
 import type { CityStore } from '@/features/city/state/cityStore';
+import type { OsStore } from '@/os/osStore';
+import { AgentBeacons } from './AgentBeacons';
 import { buildCampus } from './builder/campus';
 import { dotProgress } from './builder/links';
 import { applyDaylight } from './builder/materials';
 
 interface Props {
   readonly store: CityStore;
+  readonly osStore: OsStore | null;
   readonly reducedMotion: boolean;
 }
 
@@ -22,7 +25,7 @@ const pickId = (e: ThreeEvent<PointerEvent | MouseEvent>): string | undefined =>
   e.intersections.find((i) => typeof i.object.userData.id === 'string')?.object.userData.id as string | undefined;
 
 /** Ciudad construida una vez; React solo gestiona selección, rutas, luz y animaciones. */
-export function CampusWorld({ store, reducedMotion }: Props) {
+export function CampusWorld({ store, osStore, reducedMotion }: Props) {
   const campus = useMemo(() => buildCampus(CAMPUS_UNITS, deriveRelations(CAMPUS_UNITS)), []);
   const gl = useThree((s) => s.gl);
   const hovered = useRef<string | null>(null);
@@ -64,6 +67,7 @@ export function CampusWorld({ store, reducedMotion }: Props) {
   return (
     <>
       <primitive object={campus.root} />
+      <AgentBeacons osStore={osStore} campus={campus} reducedMotion={reducedMotion} />
       <primitive
         object={campus.pickables}
         onPointerMove={(e: ThreeEvent<PointerEvent>) => setCursor(pickId(e) ?? null)}

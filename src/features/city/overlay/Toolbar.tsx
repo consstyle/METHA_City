@@ -3,10 +3,10 @@
 import { useCity, useCityStoreApi } from '@/features/city/state/CityStoreProvider';
 import type { Messages } from '@/i18n';
 
-/** Barra inferior: órbita automática, conexiones y luz. «Namen» llega en F3 con las etiquetas. */
+/** Barra inferior de preview.html: órbita, conexiones, nombres y luz. */
 export function Toolbar({ m }: Readonly<{ m: Messages }>) {
   const store = useCityStoreApi();
-  const { auto, links, day } = useCity((s) => s.options);
+  const { auto, links, tags, day } = useCity((s) => s.options);
   const toggle = store.getState().toggle;
   return (
     <div className="toolbar" role="group" aria-label={m.toolbar.label}>
@@ -20,6 +20,10 @@ export function Toolbar({ m }: Readonly<{ m: Messages }>) {
           <circle cx="5" cy="12" r="3" /><circle cx="19" cy="5" r="3" /><circle cx="19" cy="19" r="3" /><path d="m8 11 8-5 M8 13l8 5" />
         </svg>
         {m.toolbar.links}
+      </button>
+      <button type="button" className="tool" aria-pressed={tags} onClick={() => toggle('tags')}>
+        <svg className="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v12H9l-5 4Z" /></svg>
+        {m.toolbar.names}
       </button>
       <div className="sep" />
       <button type="button" className="tool" aria-pressed={day} onClick={() => toggle('day')}>

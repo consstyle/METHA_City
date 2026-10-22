@@ -1,0 +1,76 @@
+'use client';
+
+import { abteilungName } from '@/features/city/model/abteilungen';
+import { CAMPUS_UNITS } from '@/features/city/model/campus';
+import { unitsByDistrict } from '@/features/city/model/hierarchy';
+import { DISTRICT_IDS, type UnitDef } from '@/features/city/model/types';
+import { useCity, useCityStoreApi } from '@/features/city/state/CityStoreProvider';
+import type { UnitStatus } from '@/data/contract';
+import type { Messages } from '@/i18n';
+
+function Badge({ n, tone, label }: Readonly<{ n: number; tone: 'r' | 'o'; label: string }>) {
+  if (n <= 0) return null;
+  return (
+    <span className={`badge ${tone}`} title={label}>
+      {n}
+      <span className="sr-only"> {label}</span>
+    </span>
+  );
+}
+
+function UnitRow({ m, unit, status }: Readonly<{ m: Messages; unit: UnitDef; status: UnitStatus | undefined }>) {
+  const store = useCityStoreApi();
+  const active = useCity((s) => s.selected === unit.id);
+  return (
+    <li>
+      <button
+        type="button"
+        className={`tree-row level${unit.level}${unit.level === 0 ? ' root' : ''}${active ? ' active' : ''}`}
+        title={m.units[unit.id].role}
+        aria-pressed={active}
+        data-unit={unit.id}
+        onClick={() => store.getState().select(unit.id)}
+      >
+        <small aria-hidden="true">{unit.code}</small>
+        {unit.name}
+        <span className="sr-only">, {m.units[unit.id].role}</span>
+        <span className="kpis">
+          {status?.hasData ? (
+            <>
+              <Badge n={status.alerts.montageUeberfaellig} tone="r" label={m.panel.overdue} />
+              <Badge n={status.alerts.nachbearbeitung} tone="o" label={m.panel.rework} />
+            </>
+          ) : (
+            <span className="no-data">{m.panel.noData}</span>
+          )}
+          <span className="arr" aria-hidden="true">{active ? '↗' : ''}</span>
+        </span>
+      </button>
+      {unit.subunits.map((sub) => (
+        <div key={sub.id} className={`tree-sub level${unit.level}`}>
+          <span aria-hidden="true">↳ </span>
+          {abteilungName(sub.id)}
+          {sub.external && ` · ${m.panel.external}`}
+        </div>
+      ))}
+    </li>
+  );
+}
+
+/** Árbol de los dos distritos (panel de preview.html), seleccionable con ratón y teclado. */
+export function StructureTree({ m, statuses }: Readonly<{ m: Messages; statuses: readonly UnitStatus[] }>) {
+  return (
+    <div className="tree">
+      {DISTRICT_IDS.map((district) => (
+        <section key={district} className="tree-group" aria-labelledby={`district-${district}`}>
+          <h3 id={`district-${district}`} className="tree-district">{m.districts[district].toUpperCase()}</h3>
+          <ul className="tree-list">
+            {unitsByDistrict(CAMPUS_UNITS, district).map((unit) => (
+              <UnitRow key={unit.id} m={m} unit={unit} status={statuses.find((s) => s.unitId === unit.id)} />
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}

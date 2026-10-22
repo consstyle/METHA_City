@@ -27,6 +27,8 @@ export function buildBridge(b: SceneBuilder): void {
 
 export interface RouteAnimation {
   readonly curve: THREE.CatmullRomCurve3;
+  /** Tubo de la ruta (se ilumina cuando hay una delegación activa por ella). */
+  readonly tube: THREE.Mesh;
   readonly dots: readonly THREE.Mesh[];
   readonly relation: RelationDef;
 }
@@ -57,14 +59,23 @@ export function buildRoutes(b: SceneBuilder, units: readonly UnitDef[], relation
     if (!from || !to) return [];
     const coord = relation.kind === 'coordination';
     const c = b.line(coord ? COORDINATION_ROUTE : hierarchyPoints(from, to), coord ? COORD_COLOR : ORANGE, coord ? 0.035 : 0.045, group);
+    const tube = group.children[group.children.length - 1] as THREE.Mesh;
     const dots = Array.from({ length: coord ? 4 : 2 }, () => {
       const q = new THREE.Mesh(new THREE.SphereGeometry(coord ? 0.1 : 0.085, 8, 6), coord ? b.M.coord : b.M.warm);
       group.add(q);
       return q;
     });
-    return [{ curve: c, dots, relation }];
+    return [{ curve: c, tube, dots, relation }];
   });
   return { group, animations };
+}
+
+/** true si la ruta corresponde a alguna delegación activa (en cualquier sentido si es de coordinación). */
+export function isRouteActive(relation: RelationDef, delegations: readonly { from: string; to: string | null }[]): boolean {
+  return delegations.some(
+    (d) => (d.from === relation.from && d.to === relation.to)
+      || (relation.kind === 'coordination' && d.from === relation.to && d.to === relation.from),
+  );
 }
 
 /** Posición de cada punto de una ruta en el instante `clock` (preview.html `animate`). */

@@ -1,6 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addDaysIso, timeInZurich, todayInZurich } from './dates';
+import { addDaysIso, formatDateCh, timeInZurich, todayInZurich } from './dates';
+
+test('formatDateCh escribe la fecha al estilo suizo sin correrse de día', () => {
+  assert.equal(formatDateCh('2026-10-26'), '26.10.2026');
+  assert.equal(formatDateCh('2027-01-01'), '01.01.2027');
+});
 
 test('timeInZurich muestra la hora local de Zúrich en formato 24 h', () => {
   assert.equal(timeInZurich('2026-10-21T10:05:00Z', 'de-CH'), '12:05');

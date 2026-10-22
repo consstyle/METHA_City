@@ -16,6 +16,13 @@ export function timeInZurich(iso: string, locale: string): string {
     .format(new Date(iso));
 }
 
+const CH_DATE = new Intl.DateTimeFormat('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
+
+/** Fecha AAAA-MM-DD en formato suizo (DD.MM.AAAA). */
+export function formatDateCh(iso: string): string {
+  return CH_DATE.format(new Date(`${iso}T00:00:00Z`));
+}
+
 /** Suma (o resta) días a una fecha AAAA-MM-DD existente. */
 export function addDaysIso(iso: string, days: number): string {
   const match = ISO_DATE.exec(iso);
