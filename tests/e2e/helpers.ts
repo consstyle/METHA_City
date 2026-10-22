@@ -3,7 +3,7 @@ import { expect, type Page } from '@playwright/test';
 export interface CityDiagnosticsState {
   selected: string;
   view: string;
-  options: Record<'auto' | 'links' | 'tags' | 'day', boolean>;
+  options: Record<'auto' | 'links' | 'tags' | 'day' | 'flow', boolean>;
   camera: { yaw: number; pitch: number; zoom: number; target: number[]; topView: boolean; focus: string | null };
 }
 

@@ -7,7 +7,8 @@ import {
 } from '@/features/city/scene/camera/cameraMath';
 
 export type CityView = 'city' | 'hierarchy';
-export type CityOption = 'auto' | 'links' | 'tags' | 'day';
+/** `flow`: Teilsysteme circulando por las calles (preview.html «Flujo TS»). */
+export type CityOption = 'auto' | 'links' | 'tags' | 'day' | 'flow';
 
 /** Pose deseada de la cámara; la escena se acerca a ella con amortiguación en cada fotograma. */
 export interface CameraState extends CameraPose {
@@ -45,7 +46,7 @@ export function createCityStore() {
     return {
       selected: 'avor',
       view: 'city',
-      options: { auto: false, links: true, tags: true, day: false },
+      options: { auto: false, links: true, tags: true, day: false, flow: true },
       camera: INITIAL_CAMERA,
 
       select: (id) => {

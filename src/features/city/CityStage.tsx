@@ -1,7 +1,10 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { FlowTagRegistry } from '@/features/city/flow/flowStore';
+import { FlowTags } from '@/features/city/overlay/FlowTags';
+import { useReducedMotion } from '@/lib/useReducedMotion';
 import { CAMPUS_UNITS } from '@/features/city/model/campus';
 import { DISTRICT_IDS } from '@/features/city/model/types';
 import { CameraTools } from '@/features/city/overlay/CameraTools';
@@ -10,8 +13,8 @@ import { HierarchyView } from '@/features/city/overlay/HierarchyView';
 import { createLabelRegistry } from '@/features/city/overlay/labelRegistry';
 import { Legend } from '@/features/city/overlay/Legend';
 import { Toolbar } from '@/features/city/overlay/Toolbar';
-import { useCity, useCityStoreApi } from '@/features/city/state/CityStoreProvider';
-import type { Messages } from '@/i18n';
+import { useCity, useCityStoreApi, useFlowStoreApi } from '@/features/city/state/CityStoreProvider';
+import { format, type Messages } from '@/i18n';
 import { hasWebGL } from '@/lib/webgl';
 import { useHiringStoreApi, useOsStoreApi } from '@/os/OsProvider';
 
@@ -28,7 +31,22 @@ export function CityStage({ m }: Readonly<{ m: Messages }>) {
   const hiringStore = useHiringStoreApi();
   const view = useCity((s) => s.view);
   const [labels] = useState(createLabelRegistry);
+  const flowStore = useFlowStoreApi();
+  const [flowTags] = useState<FlowTagRegistry>(() => ({ tags: [] }));
+  const flow = useMemo(
+    () => ({ store: flowStore, tags: flowTags, tagLabel: (nr: number) => format(m.flow.tag, { nr }) }),
+    [flowStore, flowTags, m],
+  );
+  const reducedMotion = useReducedMotion();
   const [status, setStatus] = useState<Status>('loading');
+
+  // Como en preview.html: con «menos movimiento» el flujo de TS empieza apagado. Solo la primera
+  // vez: si después alguien lo enciende, volver a la ciudad no lo apaga otra vez.
+  useEffect(() => {
+    if (!reducedMotion || flowStore.getState().motionDefaultApplied) return;
+    flowStore.getState().markMotionDefault();
+    if (store.getState().options.flow) store.getState().toggle('flow');
+  }, [reducedMotion, store, flowStore]);
 
   useEffect(() => {
     if (!hasWebGL()) setStatus('no-webgl');
@@ -51,6 +69,7 @@ export function CityStage({ m }: Readonly<{ m: Messages }>) {
           store={store}
           osStore={osStore}
           hiringStore={hiringStore}
+          flow={flow}
           labels={labels}
           label={m.scene.canvasLabel}
           onReady={() => setStatus((s) => (s === 'loading' ? 'ready' : s))}
@@ -58,6 +77,7 @@ export function CityStage({ m }: Readonly<{ m: Messages }>) {
         />
       )}
       {status === 'ready' && <CityLabels m={m} registry={labels} />}
+      {status === 'ready' && <FlowTags registry={flowTags} />}
       {showCity && (
         <>
           <div className="scene-title">

@@ -45,8 +45,23 @@ export const de = {
     orbit: 'Orbit',
     links: 'Verbindungen',
     names: 'Namen',
+    flow: 'TS-Fluss',
+    flowTitle: 'Teilsysteme auf den Strassen zeigen',
     sunset: 'Abendlicht',
     daylight: 'Tageslicht',
+  },
+  flow: {
+    feedTitle: 'TS IN BEWEGUNG',
+    waiting: 'Warte auf Bewegungen …',
+    off: '«TS-Fluss» einschalten, um die Bewegungen zu sehen.',
+    tag: 'TS {nr}',
+    route: '{from} → {to}',
+    kinds: {
+      plan: 'Plan fertig',
+      zuteilung: 'Zuteilung durch AVOR',
+      bereit: 'TS bereit',
+      fertig: 'TS fertig → Baustelle',
+    },
   },
   nav: {
     label: 'Module',
@@ -195,6 +210,7 @@ export const de = {
   legend: {
     hierarchy: 'HIERARCHISCHE ABHÄNGIGKEIT',
     coordination: 'KOORDINATION ZWISCHEN BEZIRKEN',
+    ts: 'TS UNTERWEGS AUF DEN STRASSEN',
     drag: 'ZIEHEN ZUM DREHEN',
     wheel: 'MAUSRAD ZUM ZOOMEN',
     compass: 'Referenzausrichtung des Modells',

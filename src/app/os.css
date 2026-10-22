@@ -57,6 +57,29 @@ a.rail-item:hover { background: #ffffff08; color: #fff; }
 .state-dot, .svc-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; vertical-align: middle; flex: none; }
 @keyframes pulse { 50% { box-shadow: 0 0 0 5px #f26a2100; } }
 
+/* ── Flujo de Teilsysteme (preview.html «Flujo TS») ── */
+.tstags-layer { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.tstag {
+  position: absolute; left: 0; top: 0; transform: translate(-50%, -100%); pointer-events: none; font: 700 9px var(--mono);
+  letter-spacing: 0.6px; color: #12171a; background: var(--orange); border-radius: 3px; padding: 3px 6px; white-space: nowrap;
+  box-shadow: 0 3px 12px #0007; transition: opacity 0.2s;
+}
+.tstag.zuteilung { background: #f7b45d; }
+.tstag.bereit { background: #e3dac4; }
+.tstag.fertig { background: #7fc4e0; }
+.legend .ts { width: 12px; height: 8px; border-radius: 2px; background: var(--orange); }
+.ts-feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ts-feed.paused { opacity: 0.55; }
+.ts-row {
+  display: grid; grid-template-columns: auto auto 1fr; gap: 3px 8px; align-items: center; padding: 8px 10px;
+  border: 1px solid var(--line); border-radius: 7px; background: #ffffff05; font-size: 11px; color: #c0c7ca;
+}
+.ts-row i { width: 8px; height: 8px; border-radius: 2px; }
+.ts-row b { font: 700 10px var(--mono); color: var(--ink); }
+.ts-row span { grid-column: 1 / -1; }
+.ts-row em { grid-column: 1 / -1; font: 9px var(--mono); font-style: normal; letter-spacing: 0.6px; color: var(--muted); }
+.feed-empty { font: 9.5px var(--mono); letter-spacing: 0.6px; color: var(--muted); padding: 6px 2px; margin: 0; }
+
 /* ── Vista «Hierarchie» ── */
 .hierarchy-view {
   position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 70%, #20272b, #101316 75%); z-index: 4;

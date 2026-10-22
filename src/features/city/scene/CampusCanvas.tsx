@@ -5,6 +5,14 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStore } from 'zustand';
 import { CAMPUS_UNITS } from '@/features/city/model/campus';
+import type { FlowStore, FlowTagRegistry } from '@/features/city/flow/flowStore';
+
+/** Flujo de Teilsysteme: estado, etiquetas sobre los camiones y su texto («TS 1203»). */
+export interface FlowProps {
+  readonly store: FlowStore;
+  readonly tags: FlowTagRegistry;
+  readonly tagLabel: (nr: number) => string;
+}
 import type { LabelRegistry } from '@/features/city/overlay/labelRegistry';
 import type { CityStore } from '@/features/city/state/cityStore';
 import type { HiringStore } from '@/os/hiringStore';
@@ -19,6 +27,8 @@ interface Props {
   readonly store: CityStore;
   readonly osStore: OsStore | null;
   readonly hiringStore: HiringStore | null;
+  /** Flujo de Teilsysteme: movimientos para el panel y etiquetas sobre los camiones. */
+  readonly flow: FlowProps;
   readonly labels: LabelRegistry;
   readonly label: string;
   readonly onReady: () => void;
@@ -60,12 +70,13 @@ interface SceneProps {
   readonly store: CityStore;
   readonly osStore: OsStore | null;
   readonly hiringStore: HiringStore | null;
+  readonly flow: FlowProps;
   readonly labels: LabelRegistry;
   readonly onReady: () => void;
   readonly reducedMotion: boolean;
 }
 
-function SceneContent({ store, osStore, hiringStore, labels, onReady, reducedMotion }: SceneProps) {
+function SceneContent({ store, osStore, hiringStore, flow, labels, onReady, reducedMotion }: SceneProps) {
   const day = useStore(store, (s) => s.options.day);
   const gl = useThree((s) => s.gl);
   const frames = useRef(0);
@@ -89,7 +100,7 @@ function SceneContent({ store, osStore, hiringStore, labels, onReady, reducedMot
     <>
       <LocalEnvironment />
       <Lighting day={day} />
-      <CampusWorld store={store} osStore={osStore} hiringStore={hiringStore} reducedMotion={reducedMotion} />
+      <CampusWorld store={store} osStore={osStore} hiringStore={hiringStore} flow={flow} reducedMotion={reducedMotion} />
       <CameraRig store={store} reducedMotion={reducedMotion} />
       <LabelProjector store={store} registry={labels} />
       <Diagnostics store={store} />
@@ -98,7 +109,7 @@ function SceneContent({ store, osStore, hiringStore, labels, onReady, reducedMot
 }
 
 /** Lienzo WebGL de la ciudad. Se carga solo en el cliente (`next/dynamic` con ssr: false). */
-export default function CampusCanvas({ store, osStore, hiringStore, labels, label, onReady, onContextLost }: Props) {
+export default function CampusCanvas({ store, osStore, hiringStore, flow, labels, label, onReady, onContextLost }: Props) {
   const reducedMotion = useReducedMotion();
   // En la vista Hierarchie la escena queda oculta: se detiene el bucle de dibujo.
   const paused = useStore(store, (s) => s.view !== 'city');
@@ -124,7 +135,7 @@ export default function CampusCanvas({ store, osStore, hiringStore, labels, labe
         });
       }}
     >
-      <SceneContent store={store} osStore={osStore} hiringStore={hiringStore} labels={labels} onReady={onReady} reducedMotion={reducedMotion} />
+      <SceneContent store={store} osStore={osStore} hiringStore={hiringStore} flow={flow} labels={labels} onReady={onReady} reducedMotion={reducedMotion} />
     </Canvas>
   );
 }

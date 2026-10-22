@@ -7,7 +7,7 @@ test('el estado inicial es el de preview.html', () => {
   const s = createCityStore().getState();
   assert.equal(s.selected, 'avor');
   assert.equal(s.view, 'city');
-  assert.deepEqual(s.options, { auto: false, links: true, tags: true, day: false });
+  assert.deepEqual(s.options, { auto: false, links: true, tags: true, day: false, flow: true });
   assert.equal(s.camera.yaw, CAMERA_DEFAULTS.yaw);
   assert.equal(s.camera.topView, false);
   assert.equal(s.camera.focus, null);
@@ -25,7 +25,7 @@ test('toggle cambia cada opción sin tocar las demás', () => {
   const store = createCityStore();
   store.getState().toggle('day');
   store.getState().toggle('links');
-  assert.deepEqual(store.getState().options, { auto: false, links: false, tags: true, day: true });
+  assert.deepEqual(store.getState().options, { auto: false, links: false, tags: true, day: true, flow: true });
 });
 
 test('zoomBy multiplica y respeta los límites', () => {

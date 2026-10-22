@@ -8,6 +8,7 @@ import type { MockScenario } from '@/data/mock/scenarios';
 import { format, type Messages } from '@/i18n';
 import { AgentSection } from './AgentSection';
 import { CockpitSummary } from './CockpitSummary';
+import { FlowFeed } from './FlowFeed';
 import { MethadeskSection } from './MethadeskSection';
 import { StructureTree } from './StructureTree';
 
@@ -64,6 +65,7 @@ export function UnitPanel({ m, result, scenario }: Props) {
       )}
       <AgentSection m={m} agentId={unit.agent ?? unit.id} />
       <MethadeskSection m={m} result={result} scenario={scenario} status={status} />
+      <FlowFeed m={m} />
       <h3 className="section-label">{m.panel.structure}</h3>
       <StructureTree m={m} statuses={statuses} />
       {bridge && (

@@ -9,6 +9,8 @@ import type { HiringStore } from '@/os/hiringStore';
 import type { OsStore } from '@/os/osStore';
 import { AgentBeacons } from './AgentBeacons';
 import { Pavilions } from './Pavilions';
+import { TsFlow } from './TsFlow';
+import type { FlowProps } from './CampusCanvas';
 import { buildCampus } from './builder/campus';
 import { dotProgress } from './builder/links';
 import { applyDaylight } from './builder/materials';
@@ -17,6 +19,7 @@ interface Props {
   readonly store: CityStore;
   readonly osStore: OsStore | null;
   readonly hiringStore: HiringStore | null;
+  readonly flow: FlowProps;
   readonly reducedMotion: boolean;
 }
 
@@ -28,7 +31,7 @@ const pickId = (e: ThreeEvent<PointerEvent | MouseEvent>): string | undefined =>
   e.intersections.find((i) => typeof i.object.userData.id === 'string')?.object.userData.id as string | undefined;
 
 /** Ciudad construida una vez; React solo gestiona selección, rutas, luz y animaciones. */
-export function CampusWorld({ store, osStore, hiringStore, reducedMotion }: Props) {
+export function CampusWorld({ store, osStore, hiringStore, flow, reducedMotion }: Props) {
   const campus = useMemo(() => buildCampus(CAMPUS_UNITS, deriveRelations(CAMPUS_UNITS)), []);
   const gl = useThree((s) => s.gl);
   const hovered = useRef<string | null>(null);
@@ -74,6 +77,7 @@ export function CampusWorld({ store, osStore, hiringStore, reducedMotion }: Prop
       {osStore && hiringStore && (
         <Pavilions osStore={osStore} hiringStore={hiringStore} materials={campus.materials} reducedMotion={reducedMotion} />
       )}
+      <TsFlow store={store} flowStore={flow.store} tags={flow.tags} tagLabel={flow.tagLabel} materials={campus.materials} />
       <primitive
         object={campus.pickables}
         onPointerMove={(e: ThreeEvent<PointerEvent>) => setCursor(pickId(e) ?? null)}
