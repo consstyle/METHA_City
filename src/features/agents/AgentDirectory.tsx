@@ -40,7 +40,7 @@ export function AgentDirectory({ m }: Readonly<{ m: Messages }>) {
       {hiring && (
         <div className="module-grid">
           <SpecialistCatalog m={m} hiring={hiring} announce={setAnnouncement} />
-          <ApprovalsCard m={m} hiring={hiring} announce={setAnnouncement} />
+          <ApprovalsCard m={m} hiring={hiring} />
         </div>
       )}
       <p className="sr-only" role="status">{announcement}</p>

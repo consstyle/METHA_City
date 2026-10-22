@@ -3,14 +3,15 @@
 import Link from 'next/link';
 import { useScenarioQuery } from '@/components/useScenarioQuery';
 import { format, type Messages } from '@/i18n';
-import { useHiring, useSim } from '@/os/OsProvider';
+import { useSim } from '@/os/OsProvider';
+import { useCounts } from '@/os/useCounts';
 
 /** Resumen del Leitstand en la cabecera del panel de la ciudad (decisión D9). */
 export function CockpitSummary({ m }: Readonly<{ m: Messages }>) {
   const sim = useSim();
   const query = useScenarioQuery();
   const working = sim?.agents.filter((a) => a.state === 'working').length ?? 0;
-  const hiringPending = useHiring((s) => s.hiring.approvals.filter((a) => a.status === 'pending').length) ?? 0;
+  const counts = useCounts();
   return (
     <div className="cockpit-summary">
       <div className="summary-head">
@@ -21,7 +22,7 @@ export function CockpitSummary({ m }: Readonly<{ m: Messages }>) {
         <p>
           <span className="state-dot working" aria-hidden="true" /> {format(m.panel.agentsWorking, { n: working, total: sim.agents.length })}
           <br />
-          <span className="state-dot waiting" aria-hidden="true" /> {format(m.panel.approvalsPending, { n: sim.approvalsPending + hiringPending })}
+          <span className="state-dot waiting" aria-hidden="true" /> {format(m.panel.approvalsPending, { n: counts?.approvals ?? 0 })}
         </p>
       ) : (
         <p className="muted">{m.cockpit.starting}</p>

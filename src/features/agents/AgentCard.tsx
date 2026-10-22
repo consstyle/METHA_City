@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { format, type Messages } from '@/i18n';
-import { agentName, taskText } from '@/os/format';
+import { agentName, agentTaskText } from '@/os/format';
 import type { SimAgent } from '@/os/simulation/engine';
 import { districtOf } from './directory';
 
@@ -32,7 +32,7 @@ export function AgentCard({ m, agent }: Readonly<{ m: Messages; agent: SimAgent 
         <p className="agent-card-serves">{format(m.directory.serves, { unit: agentName(agent.unitId, m) })}</p>
       )}
       <p className="agent-card-task">
-        {agent.taskIndex === null ? <span className="muted">{m.agents.noTask}</span> : taskText(agent.id, agent.taskIndex, m)}
+        {agentTaskText(agent, m) || <span className="muted">{m.agents.noTask}</span>}
       </p>
       <div className="agent-card-actions">
         <Link className="ghost-btn small" href={`/agenten/${agent.id}`}>

@@ -24,7 +24,7 @@ test.describe('F4 · Agenten', () => {
     await openDirectory(page);
     await page.getByRole('button', { name: 'BIM-Koordination anfordern' }).click();
     await expect(page.locator('[data-role="bim"]')).toContainText('Freigabe ausstehend');
-    await expect(page.locator('[data-approval]')).toHaveCount(1);
+    await expect(page.locator('.approvals-card .count-badge')).toHaveText('1');
 
     // La Freigabe pendiente cuenta en el Leitstand
     await page.locator('.module-rail').getByRole('link', { name: 'Leitstand' }).click();
@@ -36,8 +36,9 @@ test.describe('F4 · Agenten', () => {
     await page.waitForSelector('html[data-city-ready="true"]', { timeout: 45_000 });
     await expect.poll(() => pavilions(page)).toEqual([{ role: 'bim', pending: true }]);
 
-    await page.locator('.module-rail').getByRole('link', { name: 'Agenten' }).click();
+    await page.locator('.module-rail').getByRole('link', { name: 'Freigaben' }).click();
     await page.getByRole('button', { name: /Genehmigen: BIM-Koordination einstellen/ }).click();
+    await page.locator('.module-rail').getByRole('link', { name: 'Agenten' }).click();
     await expect(page.locator('[data-agent-card="bim"]')).toBeVisible();
     await expect(page.locator('[data-agent-card="bim"]')).toContainText('Für Projektleitung');
 
@@ -48,7 +49,10 @@ test.describe('F4 · Agenten', () => {
 
     await page.goto('/agenten');
     await page.getByRole('button', { name: 'BIM-Koordination zurückziehen' }).click();
+    await page.goto('/freigaben');
     await page.getByRole('button', { name: /Genehmigen: BIM-Koordination zurückziehen/ }).click();
+    await page.goto('/agenten');
+    await expect(page.locator('[data-agent-card]')).toHaveCount(9);
     await expect(page.locator('[data-agent-card="bim"]')).toHaveCount(0);
     await openCity(page);
     await expect.poll(() => pavilions(page)).toEqual([]);
@@ -61,7 +65,9 @@ test.describe('F4 · Agenten', () => {
     }
     await expect(page.locator('[data-role="kundendienst"]')).toContainText('Kein Bauplatz frei');
     await expect(page.getByRole('button', { name: 'Personal anfordern' })).toBeEnabled();
+    await page.goto('/freigaben');
     await page.getByRole('button', { name: /Ablehnen: Recht & Verträge einstellen/ }).click();
+    await page.goto('/agenten');
     await expect(page.getByRole('button', { name: 'Kundendienst anfordern' })).toBeVisible();
   });
 
@@ -88,9 +94,11 @@ test.describe('F4 · Agenten', () => {
     await page.getByRole('button', { name: 'IT-Support anfordern' }).click();
     await expect(page.locator('#catalog-title')).toBeFocused();
     await expect(page.locator('p[role="status"]').filter({ hasText: 'Freigabe angefordert' })).toHaveCount(1);
+    await page.goto('/freigaben');
     await page.getByRole('button', { name: /Genehmigen: IT-Support einstellen/ }).click();
-    await expect(page.locator('#approvals-title')).toBeFocused();
-    await expect(page.locator('p[role="status"]').filter({ hasText: 'Genehmigt' })).toHaveCount(1);
+    await expect(page.locator('#pending-title')).toBeFocused();
+    await expect(page.locator('p[role="status"]').filter({ hasText: 'Genehmigt: IT-Support einstellen' })).toHaveCount(1);
+    await expect(page.locator('[data-history="approved"]')).toHaveCount(1);
   });
 
   test('con los 8 solares ocupados la ciudad sigue dentro del presupuesto de dibujo', async ({ page }) => {

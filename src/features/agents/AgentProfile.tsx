@@ -8,7 +8,7 @@ import { useCityStoreApi } from '@/features/city/state/CityStoreProvider';
 import type { Messages } from '@/i18n';
 import { relativeTimeDe } from '@/lib/relativeTime';
 import { profileOf } from '@/os/chat/profile';
-import { activityText, agentName, taskText } from '@/os/format';
+import { activityText, agentName, agentTaskText } from '@/os/format';
 import { useChat, useHiring, useSim } from '@/os/OsProvider';
 import type { SimAgent } from '@/os/simulation/engine';
 import { districtOf } from './directory';
@@ -66,7 +66,7 @@ export function AgentProfile({ m, agentId }: Readonly<{ m: Messages; agentId: st
           <h2 id="identity-title" className="card-title">{m.panel.agentTitle} <span className="sim-tag">{m.sim.badge}</span></h2>
           <dl className="facts">
             <div><dt>{m.agents.state}</dt><dd><span className={`state-dot ${agent.state}`} aria-hidden="true" /> {m.agentState[agent.state]}</dd></div>
-            <div><dt>{m.agents.task}</dt><dd>{agent.taskIndex === null ? m.agents.noTask : taskText(agent.id, agent.taskIndex, m)}</dd></div>
+            <div><dt>{m.agents.task}</dt><dd>{agentTaskText(agent, m) || m.agents.noTask}</dd></div>
             <div><dt>{m.agents.lastActive}</dt><dd>{agent.lastActiveAt ? relativeTimeDe(agent.lastActiveAt, new Date(sim.now)) : m.agents.never}</dd></div>
             {district && <div><dt>{m.profile.district}</dt><dd>{m.districts[district]}</dd></div>}
             {agent.unitId && <div><dt>{agent.kind === 'specialist' ? m.profile.servesUnit : m.profile.unit}</dt><dd>{agentName(agent.unitId, m)}</dd></div>}

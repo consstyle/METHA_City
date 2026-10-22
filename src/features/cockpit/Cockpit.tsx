@@ -2,7 +2,8 @@
 
 import type { SnapshotResult } from '@/data/load';
 import type { Messages } from '@/i18n';
-import { useHiring, useSim } from '@/os/OsProvider';
+import { useSim } from '@/os/OsProvider';
+import { useCounts } from '@/os/useCounts';
 import { SIMULATED_HEALTH } from '@/os/simulation/engine';
 import { ActivityFeed } from './ActivityFeed';
 import { AgentsTable } from './AgentsTable';
@@ -21,8 +22,8 @@ function Stat({ value, label, tone }: Readonly<{ value: string | number; label: 
 /** Módulo «Leitstand» (Cockpit de NEXORA) con el lenguaje visual de preview.html. */
 export function Cockpit({ m, result }: Readonly<{ m: Messages; result: SnapshotResult }>) {
   const sim = useSim();
-  const hiringPending = useHiring((s) => s.hiring.approvals.filter((a) => a.status === 'pending').length) ?? 0;
-  const approvals = sim ? sim.approvalsPending + hiringPending : null;
+  const counts = useCounts();
+  const approvals = counts?.approvals ?? null;
   const units = result.ok ? result.snapshot.units.filter((u) => u.hasData) : [];
   const alerts = units.reduce((s, u) => s + u.alerts.montageUeberfaellig + u.alerts.nachbearbeitung, 0);
   const working = sim?.agents.filter((a) => a.state === 'working').length;
@@ -39,7 +40,7 @@ export function Cockpit({ m, result }: Readonly<{ m: Messages; result: SnapshotR
         <Stat value={sim ? `${working} / ${sim.agents.length}` : dash} label={m.cockpit.agentsActive} tone="hot" />
         <Stat value={sim?.tasksOpen ?? dash} label={m.cockpit.tasksOpen} />
         <Stat value={approvals ?? dash} label={m.cockpit.approvals} tone={approvals ? 'warn' : undefined} />
-        <Stat value={sim?.missionsRunning ?? dash} label={m.cockpit.missions} />
+        <Stat value={counts?.missions ?? dash} label={m.cockpit.missions} />
         <Stat value={result.ok ? alerts : dash} label={m.cockpit.alerts} tone={alerts > 0 ? 'warn' : undefined} />
       </section>
       <div className="cockpit-grid">

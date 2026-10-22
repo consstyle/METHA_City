@@ -41,6 +41,21 @@ test.describe('F3 · accesibilidad', () => {
     expect(await seriousViolations(page)).toEqual([]);
   });
 
+  test('Missionen, Freigaben, Aufgaben y Aktivität (con una misión en espera)', async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.goto('/missionen');
+    await page.getByLabel('Ziel', { exact: true }).fill('Überfällige Montagen reduzieren');
+    await page.getByRole('button', { name: 'Mission starten' }).click();
+    await expect(page.locator('.module-head .mission-chip')).toHaveText('Plan wartet auf Freigabe', { timeout: 15_000 });
+    expect(await seriousViolations(page), 'detalle de misión').toEqual([]);
+    for (const path of ['/missionen', '/freigaben', '/aufgaben', '/aktivitaet']) {
+      await page.goto(path);
+      await expect(page.locator('main h1')).toBeVisible();
+      await page.waitForTimeout(300);
+      expect(await seriousViolations(page), path).toEqual([]);
+    }
+  });
+
   test('Chat (con una respuesta)', async ({ page }) => {
     await page.goto('/chat?agent=bau');
     await page.getByRole('textbox', { name: 'Nachricht' }).fill('Hallo');

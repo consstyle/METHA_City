@@ -55,7 +55,8 @@ test.describe('F3 · sistema y ciudad viva', () => {
     await expect(page.locator('[data-agent]')).toHaveCount(9);
     await expect(page.locator('.stat')).toHaveCount(5);
     await expect(page.locator('[data-service="hermes"]')).toContainText('Nicht verbunden');
-    await expect(page.locator('.module-rail .rail-item.disabled')).toHaveCount(4);
+    await expect(page.locator('.module-rail .rail-item.disabled')).toHaveCount(0);
+    await expect(page.locator('.module-rail a')).toHaveCount(8);
 
     const firstEvent = () => page.locator('.feed-item .feed-text').first().textContent();
     const before = await firstEvent();

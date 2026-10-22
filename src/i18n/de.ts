@@ -3,6 +3,7 @@
  * Schreibweise: «ss» statt «ß»). Fachliche Prüfung der Übersetzungen ausstehend.
  */
 import { deAgents, specialistTasks } from './de-agents';
+import { deMissions } from './de-missions';
 
 export const de = {
   app: {
@@ -271,4 +272,5 @@ export const de = {
     },
   },
   ...deAgents,
+  ...deMissions,
 } as const;

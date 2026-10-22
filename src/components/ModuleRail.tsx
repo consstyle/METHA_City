@@ -21,10 +21,10 @@ const ITEMS: readonly RailItem[] = [
   { key: 'cockpit', href: '/leitstand', icon: 'M3 13h8V3H3Z M13 21h8V11h-8Z M13 3v6h8V3Z M3 21h8v-6H3Z' },
   { key: 'agents', href: '/agenten', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M4 21a8 8 0 0 1 16 0' },
   { key: 'chat', href: '/chat', icon: 'M4 5h16v11H9l-5 4Z' },
-  { key: 'missions', href: null, phase: 'F5', icon: 'M5 21V4 M5 4h12l-2 4 2 4H5' },
-  { key: 'tasks', href: null, phase: 'F5', icon: 'M4 4h5v16H4Z M10 4h5v10h-5Z M16 4h4v7h-4Z' },
-  { key: 'approvals', href: null, phase: 'F5', icon: 'M4 12l5 5L20 6' },
-  { key: 'activity', href: null, phase: 'F5', icon: 'M3 12h4l3-8 4 16 3-8h4' },
+  { key: 'missions', href: '/missionen', icon: 'M5 21V4 M5 4h12l-2 4 2 4H5' },
+  { key: 'tasks', href: '/aufgaben', icon: 'M4 4h5v16H4Z M10 4h5v10h-5Z M16 4h4v7h-4Z' },
+  { key: 'approvals', href: '/freigaben', icon: 'M4 12l5 5L20 6' },
+  { key: 'activity', href: '/aktivitaet', icon: 'M3 12h4l3-8 4 16 3-8h4' },
 ];
 
 export function ModuleRail({ m }: Readonly<{ m: Messages }>) {

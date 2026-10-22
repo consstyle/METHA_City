@@ -1,7 +1,7 @@
 import { CAMPUS_UNITS } from '@/features/city/model/campus';
 import { deriveRelations } from '@/features/city/model/hierarchy';
 import { format, type Messages } from '@/i18n';
-import { agentName, taskText } from '../format';
+import { agentName, agentTaskText } from '../format';
 import { delegationTargets, type SimAgent } from '../simulation/engine';
 import { specialistLinks } from '../simulation/roster';
 import { profileOf } from './profile';
@@ -57,8 +57,8 @@ const joinNames = (names: readonly string[], m: Messages) =>
 
 function statusReply(c: ReplyContext, m: Messages): string {
   const a = c.agent;
-  if (!a || a.state === 'idle' || a.taskIndex === null) return m.replies.statusIdle;
-  const task = taskText(a.id, a.taskIndex, m);
+  const task = a ? agentTaskText(a, m) : '';
+  if (!a || a.state === 'idle' || !task) return m.replies.statusIdle;
   return format(a.state === 'waiting' ? m.replies.statusWaiting : m.replies.statusWorking, { task });
 }
 

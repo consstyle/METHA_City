@@ -1,7 +1,7 @@
 import { createStore } from 'zustand/vanilla';
 import { CAMPUS_UNITS } from '@/features/city/model/campus';
 import { deriveRelations } from '@/features/city/model/hierarchy';
-import { createSimulation, step, type SimState } from './simulation/engine';
+import { appendEvents, createSimulation, step, withPins, type ExternalEvent, type MissionPins, type SimState } from './simulation/engine';
 import { addSpecialist, removeAgent, specialistLinks } from './simulation/roster';
 
 /** Intervalo entre pasos de la simulación (ms). */
@@ -12,8 +12,13 @@ export interface OsState {
   readonly sim: SimState;
   /** Especialistas contratados y activos (los decide `hiringStore`). */
   readonly specialists: readonly string[];
+  /** Agentes ocupados por pasos de misión (los decide `missionsStore`). */
+  readonly pins: MissionPins;
   tick(): void;
   syncSpecialists(roleIds: readonly string[]): void;
+  setPins(pins: MissionPins): void;
+  /** Eventos de las misiones para el registro de actividad. */
+  record(events: readonly ExternalEvent[]): void;
 }
 
 export interface OsStoreOptions {
@@ -22,6 +27,11 @@ export interface OsStoreOptions {
   /** Pasos simulados «en el pasado» para que el sistema arranque con actividad. */
   readonly warmup?: number;
 }
+
+const samePins = (a: MissionPins, b: MissionPins) => {
+  const keys = Object.keys(a);
+  return keys.length === Object.keys(b).length && keys.every((k) => a[k] === b[k]);
+};
 
 /** Estado del sistema operativo de agentes (MVP: simulación; B4: Hermes). */
 export function createOsStore({ seed = 42, now = () => new Date(), warmup = 0 }: OsStoreOptions = {}) {
@@ -33,13 +43,21 @@ export function createOsStore({ seed = 42, now = () => new Date(), warmup = 0 }:
   return createStore<OsState>()((set, get) => ({
     sim: initial,
     specialists: [],
-    tick: () => set({ sim: step(get().sim, now(), RELATIONS, specialistLinks(get().specialists)) }),
+    pins: {},
+    tick: () => set({ sim: step(get().sim, now(), RELATIONS, specialistLinks(get().specialists), get().pins) }),
     syncSpecialists: (roleIds) => {
       const current = get().specialists;
       const same = current.length === roleIds.length && roleIds.every((id) => current.includes(id));
       if (same) return;
       const removed = current.filter((id) => !roleIds.includes(id)).reduce(removeAgent, get().sim);
-      set({ sim: roleIds.reduce(addSpecialist, removed), specialists: [...roleIds] });
+      set({ sim: withPins(roleIds.reduce(addSpecialist, removed), get().pins, now()), specialists: [...roleIds] });
+    },
+    setPins: (pins) => {
+      if (samePins(pins, get().pins)) return;
+      set({ pins: { ...pins }, sim: withPins(get().sim, pins, now()) });
+    },
+    record: (events) => {
+      if (events.length > 0) set({ sim: appendEvents(get().sim, events) });
     },
   }));
 }

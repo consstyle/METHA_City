@@ -11,6 +11,9 @@ import type { ActivityEvent, Health, OsSnapshot } from '../contract';
 export const ACTIVITY_LIMIT = 50;
 /** Número de textos de tarea por agente en el catálogo (i18n `sim.tasks`). */
 export const TASKS_PER_AGENT = 4;
+/** Eventos externos más antiguos que esto (ms) cuentan como pasados: no encienden rutas. */
+const RECENT_MS = 5_000;
+const STALE_TICKS = 10;
 
 export interface SimAgent {
   readonly id: string;
@@ -19,6 +22,8 @@ export interface SimAgent {
   readonly unitId: UnitId | null;
   readonly state: 'idle' | 'working' | 'waiting';
   readonly taskIndex: number | null;
+  /** Paso de misión que lo tiene ocupado (texto libre); null si trabaja con el motor. */
+  readonly focus: string | null;
   readonly since: number;
   readonly busyFor: number;
   readonly lastActiveAt: string | null;
@@ -33,6 +38,20 @@ export interface SimState {
   readonly tasksOpen: number;
   readonly approvalsPending: number;
   readonly missionsRunning: number;
+  /** Contador de eventos externos (misiones) para darles ids únicos. */
+  readonly external: number;
+}
+
+/** Agentes ocupados por pasos de misión: id del agente → texto del paso. */
+export type MissionPins = Readonly<Record<string, string>>;
+
+/** Evento que llega de fuera del motor (misiones) para el registro de actividad. */
+export interface ExternalEvent {
+  readonly type: ActivityEvent['type'];
+  readonly agentId: string;
+  readonly targetAgentId: string | null;
+  readonly note: string;
+  readonly at: string;
 }
 
 /** Hermes aún no está conectado: la salud lo dice tal cual. */
@@ -81,11 +100,25 @@ export function createSimulation(seed: number, now: Date): SimState {
     { id: ORCHESTRATOR_AGENT, kind: 'orchestrator', unitId: null },
     ...CAMPUS_UNITS.map((u) => ({ id: u.agent ?? u.id, kind: 'unit' as const, unitId: u.id })),
   ];
-  const agents: SimAgent[] = defs.map((a) => ({ ...a, state: 'idle', taskIndex: null, since: 0, busyFor: 0, lastActiveAt: null }));
-  return { seed, tick: 0, now: now.toISOString(), agents, activity: [], tasksOpen: 0, approvalsPending: 0, missionsRunning: 0 };
+  const agents: SimAgent[] = defs.map((a) => ({ ...a, state: 'idle', taskIndex: null, focus: null, since: 0, busyFor: 0, lastActiveAt: null }));
+  return { seed, tick: 0, now: now.toISOString(), agents, activity: [], tasksOpen: 0, approvalsPending: 0, missionsRunning: 0, external: 0 };
 }
 
-export function step(state: SimState, now: Date, relations: readonly RelationDef[], links: readonly DelegationLink[] = []): SimState {
+/** Los agentes fijados por una misión trabajan en su paso; al soltarlos quedan libres. */
+function applyPins(agents: readonly SimAgent[], pins: MissionPins, tick: number, at: string): SimAgent[] {
+  return agents.map((a): SimAgent => {
+    const pin = Object.hasOwn(pins, a.id) ? pins[a.id] : undefined;
+    if (pin !== undefined) {
+      const changed = a.focus !== pin;
+      return { ...a, state: 'working', taskIndex: null, focus: pin, since: changed ? tick : a.since, busyFor: 0, lastActiveAt: changed ? at : a.lastActiveAt };
+    }
+    return a.focus !== null ? { ...a, state: 'idle', focus: null, since: tick, lastActiveAt: at } : a;
+  });
+}
+
+export function step(
+  state: SimState, now: Date, relations: readonly RelationDef[], links: readonly DelegationLink[] = [], pins: MissionPins = {},
+): SimState {
   const tick = state.tick + 1;
   const rnd = random(state.seed, tick);
   const at = now.toISOString();
@@ -93,8 +126,9 @@ export function step(state: SimState, now: Date, relations: readonly RelationDef
   const emit = (type: ActivityEvent['type'], agentId: string, targetAgentId: string | null, taskIndex: number | null) =>
     events.push({ id: `${state.seed}-${tick}-${events.length}`, tick, at, type, agentId, targetAgentId, taskIndex });
 
-  // 1. Terminan los trabajos y las esperas vencidas
-  let agents = state.agents.map((a): SimAgent => {
+  // 0. Las misiones mandan sobre sus agentes; 1. terminan los trabajos y las esperas vencidas
+  let agents = applyPins(state.agents, pins, tick, at).map((a): SimAgent => {
+    if (a.focus !== null) return a;
     if (a.state === 'working' && tick - a.since >= a.busyFor) {
       if (rnd() < 0.25) {
         emit('approval', a.id, null, a.taskIndex);
@@ -145,7 +179,37 @@ export function step(state: SimState, now: Date, relations: readonly RelationDef
     tasksOpen: busy,
     approvalsPending: waiting,
     missionsRunning: chief && chief.state !== 'idle' ? 1 : 0,
+    external: state.external,
   };
+}
+
+/** Aplica las misiones al momento (sin esperar al siguiente paso del motor). */
+export function withPins(state: SimState, pins: MissionPins, now: Date): SimState {
+  const agents = applyPins(state.agents, pins, state.tick, now.toISOString());
+  return {
+    ...state,
+    agents,
+    tasksOpen: agents.filter((a) => a.state !== 'idle').length,
+    approvalsPending: agents.filter((a) => a.state === 'waiting').length,
+  };
+}
+
+/** Añade eventos de las misiones al registro (encienden rutas y aparecen en la actividad). */
+export function appendEvents(state: SimState, external: readonly ExternalEvent[]): SimState {
+  if (external.length === 0) return state;
+  // Lo que llega con retraso (misiones puestas al día tras recargar) no debe encender rutas ahora.
+  const recent = (at: string) => Date.parse(state.now) - Date.parse(at) <= RECENT_MS;
+  const events: ActivityEvent[] = external.map((e, i) => ({
+    id: `${state.seed}-x${state.external + i}`,
+    tick: recent(e.at) ? state.tick : Math.max(0, state.tick - STALE_TICKS),
+    at: e.at,
+    type: e.type,
+    agentId: e.agentId,
+    targetAgentId: e.targetAgentId,
+    taskIndex: null,
+    note: e.note.slice(0, 300),
+  }));
+  return { ...state, activity: [...state.activity, ...events].slice(-ACTIVITY_LIMIT), external: state.external + events.length };
 }
 
 /** Delegaciones entre unidades de los últimos `window` ticks (para encender las rutas de la ciudad). */

@@ -15,7 +15,7 @@ test('en el móvil la escena, los controles y el panel siguen disponibles', asyn
   await page.screenshot({ path: info.outputPath('methacity-mobile.png'), fullPage: true });
 });
 
-for (const path of ['/agenten', '/chat']) {
+for (const path of ['/agenten', '/chat', '/missionen', '/freigaben', '/aufgaben', '/aktivitaet']) {
   test(`en el móvil ${path} cabe en la pantalla`, async ({ page }, info) => {
     await page.goto(path);
     await expect(page.locator('main')).toBeVisible();

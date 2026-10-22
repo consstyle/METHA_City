@@ -33,6 +33,8 @@ export const ActivityEventSchema = z.object({
   agentId: z.string().min(1),
   targetAgentId: z.string().nullable(),
   taskIndex: index.nullable(),
+  /** Texto libre de eventos que no vienen del catálogo (p. ej. pasos de misión). */
+  note: z.string().max(300).nullable().optional(),
 });
 export type ActivityEvent = z.infer<typeof ActivityEventSchema>;
 

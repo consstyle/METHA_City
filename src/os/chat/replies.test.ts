@@ -6,7 +6,7 @@ import { composeReply, detectIntents, type ReplyContext } from './replies';
 
 const m = getMessages();
 const agent = (over: Partial<SimAgent> = {}): SimAgent => ({
-  id: 'bauleitung', kind: 'unit', unitId: 'bauleitung', state: 'idle', taskIndex: null, since: 0, busyFor: 0, lastActiveAt: null, ...over,
+  id: 'bauleitung', kind: 'unit', unitId: 'bauleitung', state: 'idle', taskIndex: null, focus: null, since: 0, busyFor: 0, lastActiveAt: null, ...over,
 });
 const ctx = (text: string, over: Partial<ReplyContext> = {}): ReplyContext => ({
   agentId: 'bauleitung', text, attachments: [], agent: agent(), kpis: { kind: 'unit', hasData: true, open: 3, total: 9, overdue: 1, rework: 2 },
@@ -28,6 +28,8 @@ test('el estado refleja lo que hace el agente en la simulación', () => {
   assert.equal(working, `Ich arbeite gerade an: «${m.sim.tasks.bauleitung[0]}».`);
   const waiting = composeReply(ctx('Status', { agent: agent({ state: 'waiting', taskIndex: 1 }) }), m);
   assert.match(waiting, /Freigabe/);
+  const mission = composeReply(ctx('Status', { agent: agent({ state: 'working', focus: 'Abrufe für die Mission prüfen' }) }), m);
+  assert.equal(mission, 'Ich arbeite gerade an: «Abrufe für die Mission prüfen».');
 });
 
 test('los números salen de MethaDesk (o se dice que no hay)', () => {

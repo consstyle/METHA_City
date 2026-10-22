@@ -42,3 +42,22 @@ test('syncSpecialists añade y quita especialistas según las contrataciones act
   store.getState().syncSpecialists(['it']);
   assert.deepEqual(ids(), ['it']);
 });
+
+test('setPins ocupa a los agentes al momento y record añade eventos de misión', () => {
+  let t = NOW.getTime();
+  const store = createOsStore({ now: () => new Date(t) });
+  store.getState().setPins({ bau: 'Montageplan prüfen' });
+  const bau = () => store.getState().sim.agents.find((a) => a.id === 'bau')!;
+  assert.deepEqual([bau().state, bau().focus], ['working', 'Montageplan prüfen']);
+  const before = store.getState().sim;
+  store.getState().setPins({ bau: 'Montageplan prüfen' });
+  assert.equal(store.getState().sim, before, 'mismos pins: sin cambios');
+  t += SIMULATION_INTERVAL_MS;
+  store.getState().tick();
+  assert.equal(bau().focus, 'Montageplan prüfen', 'el paso del motor respeta el pin');
+  store.getState().record([{ type: 'completed', agentId: 'bau', targetAgentId: null, note: 'Montageplan prüfen', at: new Date(t).toISOString() }]);
+  assert.equal(store.getState().sim.activity.at(-1)!.note, 'Montageplan prüfen');
+  store.getState().record([]);
+  store.getState().setPins({});
+  assert.deepEqual([bau().state, bau().focus], ['idle', null]);
+});

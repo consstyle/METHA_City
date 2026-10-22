@@ -6,7 +6,7 @@ import { CAMPUS_UNITS } from '@/features/city/model/campus';
 import { useCityStoreApi } from '@/features/city/state/CityStoreProvider';
 import type { Messages } from '@/i18n';
 import { relativeTimeDe } from '@/lib/relativeTime';
-import { agentName, taskText } from '@/os/format';
+import { agentName, agentTaskText } from '@/os/format';
 import type { SimState } from '@/os/simulation/engine';
 
 /** Tabla de agentes: estado, tarea y última actividad; cada fila lleva a su edificio. */
@@ -52,7 +52,7 @@ export function AgentsTable({ m, sim }: Readonly<{ m: Messages; sim: SimState | 
                     <small className="cell-sub">{unit ? m.districts[unit.district] : m.agents.chiefRole}</small>
                   </td>
                   <td><span className={`state-chip ${a.state}`}><span className={`state-dot ${a.state}`} aria-hidden="true" />{m.agentState[a.state]}</span></td>
-                  <td>{a.taskIndex === null ? <span className="muted">{m.agents.noTask}</span> : taskText(a.id, a.taskIndex, m)}</td>
+                  <td>{agentTaskText(a, m) || <span className="muted">{m.agents.noTask}</span>}</td>
                   <td className="nowrap">{a.lastActiveAt ? relativeTimeDe(a.lastActiveAt, new Date(sim.now)) : m.agents.never}</td>
                 </tr>
               );

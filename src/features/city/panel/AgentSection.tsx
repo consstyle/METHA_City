@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import type { Messages } from '@/i18n';
 import { relativeTimeDe } from '@/lib/relativeTime';
-import { taskText } from '@/os/format';
+import { agentTaskText } from '@/os/format';
 import { useSim } from '@/os/OsProvider';
 
 /** Estado del agente de la unidad: qué hace, desde cuándo, y acceso a su perfil y al chat. */
@@ -25,7 +25,7 @@ export function AgentSection({ m, agentId }: Readonly<{ m: Messages; agentId: st
           </div>
           <div>
             <dt>{m.agents.task}</dt>
-            <dd>{agent.taskIndex === null ? m.agents.noTask : taskText(agent.id, agent.taskIndex, m)}</dd>
+            <dd>{agentTaskText(agent, m) || m.agents.noTask}</dd>
           </div>
           <div>
             <dt>{m.agents.lastActive}</dt>

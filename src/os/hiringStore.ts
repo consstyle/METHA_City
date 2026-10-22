@@ -28,23 +28,27 @@ export function createHiringStore({ now = () => new Date(), getStore }: StoreOpt
       set({ hiring });
       storage.save(hiring);
     };
+    /** Cada acción parte de lo último guardado (quizá por otra pestaña) para no pisarlo. */
+    const latest = () => storage.load() ?? get().hiring;
     return {
       hiring: storage.load() ?? EMPTY_HIRING,
       request: (roleId) => {
-        const check = canHire(get().hiring, roleId);
-        if (check === 'ok') commit(requestHire(get().hiring, roleId, now()));
+        const hiring = latest();
+        const check = canHire(hiring, roleId);
+        if (check === 'ok') commit(requestHire(hiring, roleId, now()));
         return check;
       },
       retire: (roleId) => {
-        const { hiring } = get();
+        const hiring = latest();
         const active = hiring.hires.some((h) => h.roleId === roleId && h.status === 'active');
         if (!active || pendingApprovals(hiring).some((a) => a.roleId === roleId)) return false;
         commit(requestRetire(hiring, roleId, now()));
         return true;
       },
       decide: (approvalId, approve) => {
-        if (!pendingApprovals(get().hiring).some((a) => a.id === approvalId)) return false;
-        commit(decide(get().hiring, approvalId, approve, now()));
+        const hiring = latest();
+        if (!pendingApprovals(hiring).some((a) => a.id === approvalId)) return false;
+        commit(decide(hiring, approvalId, approve, now()));
         return true;
       },
       reload: () => set({ hiring: storage.load() ?? EMPTY_HIRING }),

@@ -14,7 +14,7 @@ export function addSpecialist(state: SimState, roleId: string): SimState {
   const role = specialistById(roleId);
   if (!role) throw new Error(`unknown specialist ${roleId}`);
   if (state.agents.some((a) => a.id === role.id)) return state;
-  const agent: SimAgent = { id: role.id, kind: 'specialist', unitId: role.unitId, state: 'idle', taskIndex: null, since: state.tick, busyFor: 0, lastActiveAt: null };
+  const agent: SimAgent = { id: role.id, kind: 'specialist', unitId: role.unitId, state: 'idle', taskIndex: null, focus: null, since: state.tick, busyFor: 0, lastActiveAt: null };
   return recount(state, [...state.agents, agent]);
 }
 
