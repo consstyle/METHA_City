@@ -5,7 +5,7 @@ Centro de control de agentes de METHABAU: una ciudad 3D donde cada edificio es u
 - **Plan:** `PLAN-DESARROLLO.md` y `PLAN-MethaCity.md` (carpeta `Methabau_Citi` en OneDrive).
 - **Referencia visual:** `Methabau_Citi/preview/preview.html`.
 - **Rumbo:** sistema operativo de agentes inspirado en NEXORA (plan v3, `PLAN-DESARROLLO.md`), con el MVP de frontend al final de F5.
-- **Fase actual:** F5 (misiones, tareas, Freigaben y actividad), **hito MVP**: el ciclo completo «misión → plan → Freigabe → ejecución en la ciudad → resultado → informe». F4 (agentes y chat) en `10c3fc3`. Siguiente: F5b (demo en el VPS).
+- **Fase actual:** F5b (demo del MVP en el VPS): imagen Docker standalone, acceso temporal por usuario y contraseña, runbook de Dokploy en [`deploy/demo/README.md`](deploy/demo/README.md). MVP (F5) en `3033912`.
 
 > No ejecutes `npm run build` mientras corre `npm run dev`: ambos usan `.next`. Las pruebas e2e usan su propia carpeta.
 
@@ -25,6 +25,10 @@ Centro de control de agentes de METHABAU: una ciudad 3D donde cada edificio es u
 | `npm run test:coverage` | pruebas con cobertura (mínimo 80 % de líneas, ramas y funciones) |
 | `npm run test:e2e` | pruebas e2e con Playwright (compila en `.next-e2e` y sirve en el puerto 3200; no interfiere con `npm run dev`). La primera vez: `npx playwright install chromium` |
 | `npm run check` | todo lo anterior salvo la compilación |
+| `scripts/package-demo.ps1` | zip del commit actual para la demo en Dokploy (ver `deploy/demo/README.md`) |
+
+## Demo en el VPS (F5b)
+`Dockerfile` en la raíz (salida standalone, usuario sin privilegios, comprobación de salud en `/api/health`). En la imagen, `METHACITY_REQUIRE_AUTH=1`: sin `DEMO_USER` y `DEMO_PASSWORD` (≥ 16 caracteres) la app responde 503; detrás de Traefik, por HTTP responde 403. En local y en las pruebas no se pide nada.
 
 ## Escenarios del simulador
 Mientras no hay backend, los datos salen de `src/data/mock` (indicadores del seed sintético del VPS de desarrollo). El escenario se elige con `?szenario=`:

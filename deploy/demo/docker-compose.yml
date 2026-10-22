@@ -1,0 +1,60 @@
+# MethaCity · demo del MVP en el VPS (F5b) · OPCIÓN B (por SSH, sin la subida «Drop» de Dokploy).
+#
+# Construye la imagen del Dockerfile de la raíz y la publica por el Traefik de Dokploy con HTTPS.
+# Uso (en el VPS, dentro de la carpeta descomprimida):
+#   cp deploy/demo/.env.example deploy/demo/.env   # y rellénalo
+#   docker compose -f deploy/demo/docker-compose.yml --env-file deploy/demo/.env up -d --build
+#
+# Datos: solo el simulador. Acceso: Basic Auth de la propia app (falla cerrada sin credenciales).
+
+name: methacity-demo
+
+services:
+  web:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: methacity-demo:latest
+    container_name: methacity-demo
+    restart: unless-stopped
+    environment:
+      DEMO_USER: ${DEMO_USER:?define DEMO_USER}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:?define DEMO_PASSWORD}
+    networks:
+      - dokploy-network
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      # HTTP → HTTPS
+      - traefik.http.routers.methacity-demo-http.rule=Host(`${DEMO_HOST:?define DEMO_HOST}`)
+      - traefik.http.routers.methacity-demo-http.entrypoints=web
+      - traefik.http.routers.methacity-demo-http.middlewares=methacity-demo-https
+      - traefik.http.middlewares.methacity-demo-https.redirectscheme.scheme=https
+      # HTTPS con certificado de Let's Encrypt (resolver de Dokploy)
+      - traefik.http.routers.methacity-demo.rule=Host(`${DEMO_HOST}`)
+      - traefik.http.routers.methacity-demo.entrypoints=websecure
+      - traefik.http.routers.methacity-demo.tls.certresolver=letsencrypt
+      # Límite de peticiones contra la fuerza bruta (generoso: una página carga muchos archivos)
+      - traefik.http.middlewares.methacity-demo-rl.ratelimit.average=30
+      - traefik.http.middlewares.methacity-demo-rl.ratelimit.burst=200
+      - traefik.http.routers.methacity-demo.middlewares=methacity-demo-rl
+      - traefik.http.services.methacity-demo.loadbalancer.server.port=3000
+    mem_limit: 768m
+    pids_limit: 200
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /app/.next/cache:rw,noexec,nosuid,size=128m,uid=1000,gid=1000
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  dokploy-network:
+    external: true

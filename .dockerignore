@@ -1,0 +1,16 @@
+# Solo el código entra en la imagen: nada de builds locales, pruebas, secretos ni historia de Git.
+# Ojo: en .dockerignore un patrón sin «**/» solo vale para la raíz del contexto.
+**/node_modules
+.next
+.next-*
+test-results
+playwright-report
+coverage
+dist
+.git
+**/.env
+**/.env.*
+!**/.env.example
+**/*.log
+.vscode
+.idea

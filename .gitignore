@@ -10,3 +10,5 @@ next-env.d.ts
 .next-e2e
 test-results
 playwright-report
+dist
+.next-standalone

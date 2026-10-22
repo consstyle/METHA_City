@@ -28,12 +28,14 @@ const securityHeaders = [
   { key: 'Referrer-Policy', value: 'same-origin' },
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+  // Herramienta interna: fuera de los buscadores (D22).
+  { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
   // HSTS solo en producción (el navegador lo ignora por HTTP). Si Traefik ya lo pone, se puede quitar.
   ...(isDev ? [] : [{ key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' }]),
 ];
 
 const config: NextConfig = {
-  // La imagen Docker de F6 usa la salida standalone.
+  // La imagen Docker de la demo (F5b) usa la salida standalone.
   output: process.env.NEXT_OUTPUT_STANDALONE === '1' ? 'standalone' : undefined,
   // Las pruebas e2e compilan en otra carpeta para no pisar la de `npm run dev`.
   distDir: process.env.NEXT_DIST_DIR || '.next',
