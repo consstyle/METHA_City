@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>METHACity · vista previa</title>
+<style>
+  :root {
+    --bg: #ffffff; --surface: #f8fafc; --border: #e2e8f0; --text: #334155; --muted: #64748b;
+    --primary: #ff6b35; --primary-soft: #fff5f2; --danger: #ef4444;
+    --ground: #e2e8f0; --pad: #f8fafc; --plaza: #ffffff; --wall: #ffffff; --roof: #f1f5f9;
+    --edge: #cbd5e1; --win-off: #e2e8f0; --shadow: rgba(15, 23, 42, .10);
+    --radius: 16px;
+  }
+  :root[data-theme="dark"] {
+    --bg: #020617; --surface: #0f172a; --border: #1e293b; --text: #fafafa; --muted: #94a3b8;
+    --primary-soft: #2a1308; --ground: #060d1c; --pad: #0f172a; --plaza: #111c33; --wall: #243247;
+    --roof: #334155; --edge: #0b1220; --win-off: #1e293b; --shadow: rgba(0, 0, 0, .35);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--text);
+    background: var(--bg); display: flex; flex-direction: column; overflow: hidden;
+  }
+  header {
+    display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--border);
+    background: var(--bg); flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand svg { width: 36px; height: 36px; }
+  .wordmark { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
+  .wordmark .c { color: var(--primary); }
+  .wordmark small { font-size: 12px; font-weight: 500; color: var(--muted); letter-spacing: 0; margin-left: 3px; }
+  .tag {
+    font-size: 12px; font-weight: 600; color: var(--primary); background: var(--primary-soft);
+    border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); padding: 4px 10px; border-radius: 999px;
+  }
+  .spacer { flex: 1; }
+  button {
+    font: inherit; font-size: 13px; font-weight: 600; color: var(--text); background: var(--bg);
+    border: 1px solid var(--border); border-radius: 12px; padding: 7px 12px; cursor: pointer;
+    transition: border-color .15s, box-shadow .15s, background .15s;
+  }
+  button:hover { border-color: var(--primary); }
+  button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  button[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 4px 14px rgba(255,107,53,.15); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  main { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 360px; }
+  #stage { position: relative; min-width: 0; min-height: 0; background: var(--bg); }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+  canvas.hover { cursor: pointer; }
+  canvas.drag { cursor: grabbing; }
+  .legend {
+    position: absolute; left: 12px; bottom: 12px; background: color-mix(in srgb, var(--bg) 92%, transparent);
+    border: 1px solid var(--border); border-radius: 14px; padding: 10px 12px; font-size: 12px; color: var(--muted);
+    display: grid; gap: 5px; backdrop-filter: blur(6px); max-width: 270px;
+  }
+  .legend b { color: var(--text); font-weight: 600; }
+  .legend div { display: flex; align-items: center; gap: 8px; }
+  .sw { width: 12px; height: 12px; border-radius: 4px; flex: none; }
+  .sw.round { border-radius: 50%; }
+  .hint {
+    position: absolute; right: 12px; bottom: 12px; font-size: 12px; color: var(--muted);
+    background: color-mix(in srgb, var(--bg) 92%, transparent); border: 1px solid var(--border);
+    padding: 6px 10px; border-radius: 12px;
+  }
+  .ctrls { position: absolute; right: 12px; top: 12px; display: grid; gap: 6px; }
+  .ctrls button { width: 36px; padding: 6px 0; text-align: center; font-size: 16px; line-height: 1; }
+  aside { border-left: 1px solid var(--border); background: var(--surface); overflow: auto; padding: 16px; }
+  aside h2 { margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+  aside .sub { color: var(--muted); font-size: 13px; margin: 2px 0 14px; }
+  .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .kpi { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 10px 12px; box-shadow: 0 1px 2px var(--shadow); }
+  .kpi .n { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+  .kpi .l { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .kpi.warn .n { color: var(--danger); }
+  .kpi.hot .n { color: var(--primary); }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .box { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 12px; font-size: 13px; margin-bottom: 12px; }
+  .box h3 { margin: 0 0 6px; font-size: 13px; }
+  .box ul { margin: 0; padding-left: 18px; color: var(--muted); }
+  .list { display: grid; gap: 6px; }
+  .list button { display: flex; align-items: center; gap: 8px; text-align: left; width: 100%; font-weight: 500; }
+  .list .badges { margin-left: auto; display: flex; gap: 4px; }
+  .b { min-width: 20px; padding: 1px 6px; border-radius: 999px; font-size: 11px; font-weight: 700; color: #fff; text-align: center; }
+  .b.r { background: var(--danger); } .b.o { background: var(--primary); }
+  .actions { display: grid; gap: 8px; margin-top: 4px; }
+  .actions button { width: 100%; }
+  .back { margin-bottom: 10px; }
+  .foot { margin-top: 14px; font-size: 11px; color: var(--muted); line-height: 1.5; }
+  @media (max-width: 860px) {
+    header { padding: 8px 12px; gap: 8px; }
+    .tag { display: none; }
+    button { padding: 6px 10px; }
+    main { grid-template-columns: 1fr; grid-template-rows: minmax(320px, 1fr) minmax(0, 38vh); }
+    aside { border-left: 0; border-top: 1px solid var(--border); }
+    .legend { display: none; }
+    .hint { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 100 100" aria-hidden="true">
+      <defs><linearGradient id="hat" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#F97316"/><stop offset="100%" stop-color="#EA580C"/></linearGradient></defs>
+      <rect x="75" y="60" width="20" height="8" rx="4" fill="#9CA3AF"/><circle cx="95" cy="64" r="5" fill="#4B5563"/>
+      <rect x="5" y="60" width="20" height="8" rx="4" fill="#9CA3AF"/><circle cx="5" cy="64" r="5" fill="#4B5563"/>
+      <rect x="25" y="45" width="50" height="46" rx="12" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="2"/>
+      <rect x="18" y="60" width="7" height="12" rx="3" fill="#9CA3AF"/><rect x="75" y="60" width="7" height="12" rx="3" fill="#9CA3AF"/>
+      <rect x="32" y="54" width="36" height="18" rx="6" fill="#1F2937"/>
+      <circle cx="40" cy="63" r="4" fill="#60A5FA"/><circle cx="60" cy="63" r="4" fill="#60A5FA"/>
+      <path d="M 40 82 Q 50 88 60 82" fill="none" stroke="#4B5563" stroke-width="3" stroke-linecap="round"/>
+      <path d="M 20 45 Q 20 15 50 15 Q 80 15 80 45 Z" fill="url(#hat)"/>
+      <rect x="15" y="42" width="70" height="6" rx="3" fill="#EA580C"/><rect x="42" y="10" width="16" height="8" rx="4" fill="#C2410C"/>
+      <g transform="translate(50, 32)"><rect x="-18" y="-6" width="36" height="9" rx="1" fill="#000"/>
+        <text x="0" y="1" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="5px" text-anchor="middle"><tspan fill="#F26A21">METHA</tspan><tspan fill="#FFFFFF">BAU</tspan></text></g>
+    </svg>
+    <div class="wordmark">METHA<span class="c">City</span><small>pro</small></div>
+  </div>
+  <span class="tag">Vista previa · datos de prueba</span>
+  <span class="spacer"></span>
+  <button id="btnAuto" aria-pressed="true" title="Rotación automática">Rotar</button>
+  <button id="btnTheme" aria-pressed="false" title="Cambiar entre modo claro y oscuro">Modo oscuro</button>
+</header>
+<main>
+  <div id="stage">
+    <canvas id="cv" aria-label="Ciudad 3D de METHABAU: un edificio por departamento. Usa la lista del panel para navegar con teclado."></canvas>
+    <div class="ctrls"><button id="zin" aria-label="Acercar">+</button><button id="zout" aria-label="Alejar">−</button><button id="reset" aria-label="Restablecer vista" title="Restablecer vista">⟲</button></div>
+    <div class="legend" aria-hidden="true">
+      <b>Cómo leer la ciudad</b>
+      <div><span class="sw" style="background:#ff6b35"></span>Ventana naranja = trabajo abierto</div>
+      <div><span class="sw round" style="background:#ef4444"></span>Montaje atrasado (nº de TS)</div>
+      <div><span class="sw round" style="background:#ff6b35"></span>Retrabajo (nº de TS)</div>
+      <div><span class="sw" style="background:#94a3b8;height:5px;margin:3px 0"></span>Altura = nº de Teilsysteme</div>
+    </div>
+    <div class="hint">Arrastra para girar · rueda para acercar · clic en un edificio</div>
+  </div>
+  <aside id="panel" aria-live="polite"></aside>
+</main>
+
+<script>
+(() => {
+  'use strict';
+  // ── Datos de prueba: los del seed sintético del VPS de desarrollo (mc.abteilung_kennzahlen) ──
+  // kind: abt = departamento de MethaDesk; extra = módulo transversal. Los extras son ilustrativos.
+  const B = [
+    { id:'projektleiter', name:'Projektleiter',  color:'#6366f1', agent:'projektleiter', ts:4, offen:3, ueb:0, d14:0, nach:0, expr:1, abruf:0, watch:['Hitos y riesgos del proyecto','Proyectos con retraso','Resumen para dirección'] },
+    { id:'bauleiter',     name:'Bauleitung',     color:'#0ea5e9', agent:'bauleitung',    ts:4, offen:3, ueb:2, d14:0, nach:0, expr:0, abruf:1, watch:['Abrufe (TS llamados a obra)','Montagetermin y Terminprogramm','Montajes de las próximas semanas'] },
+    { id:'planer',        name:'Planer',         color:'#14b8a6', agent:'planer',        ts:5, offen:3, ueb:3, d14:0, nach:1, expr:0, abruf:0, watch:['Abgabe Planer vencida','TS en planificación','Planos pendientes'] },
+    { id:'einkauf',       name:'Einkauf',        color:'#f59e0b', agent:'einkauf',       ts:3, offen:2, ueb:0, d14:1, nach:0, expr:0, abruf:0, watch:['Pedidos y plazos de compra','Proveedores y entregas','Duración de aprovisionamiento'] },
+    { id:'avor',          name:'AVOR',           color:'#a855f7', agent:'avor',          ts:4, offen:2, ueb:0, d14:2, nach:1, expr:0, abruf:0, watch:['TS abiertos y grupos','Preparación del trabajo','Cola de producción'] },
+    { id:'schlosserei',   name:'Schlosserei',    color:'#64748b', agent:'produktion',    ts:4, offen:3, ueb:1, d14:1, nach:0, expr:1, abruf:0, watch:['TS en fabricación','Grupos (Laserteile…)','Retrabajos'] },
+    { id:'blech',         name:'Blechabteilung', color:'#f97316', agent:'produktion',    ts:3, offen:1, ueb:1, d14:0, nach:0, expr:0, abruf:0, watch:['TS de chapa en fabricación','Cola y plazos','Retrabajos'] },
+    { id:'werkhof',       name:'Werkhof',        color:'#8b5cf6', agent:'werkhof',       ts:4, offen:2, ueb:1, d14:2, nach:1, expr:0, abruf:0, watch:['Pedidos del Bau por preparar','Entregas y envíos','Lager del Werkhof'] },
+    { id:'montage',       name:'Montage',        color:'#22c55e', agent:'montage',       ts:4, offen:3, ueb:1, d14:0, nach:0, expr:1, abruf:0, watch:['Duración de producción','TS listos para montar','Equipos de montaje'] },
+    { id:'bau',           name:'Bau',            color:'#ef4444', agent:'bau',           ts:4, offen:2, ueb:0, d14:2, nach:1, expr:0, abruf:0, watch:['Pedidos de material de obra','Tareas de ejecución','Recepciones de entrega'] },
+    { id:'subunternehmer',name:'Subunternehmer', color:'#06b6d4', agent:'externos',      ts:4, offen:2, ueb:2, d14:0, nach:1, expr:0, abruf:0, watch:['TS asignados a subcontratistas','Plazos de terceros','Retrabajos externos'] },
+    { id:'unternehmer',   name:'Unternehmer',    color:'#f43f5e', agent:'externos',      ts:5, offen:4, ueb:1, d14:2, nach:0, expr:1, abruf:0, watch:['TS asignados a contratistas','Plazos de terceros','Entregas externas'] },
+    { id:'lager',   name:'Lager',     kind:'extra', color:'#94a3b8', agent:'logistica', ts:0, offen:0, ueb:0, d14:0, nach:0, expr:0, abruf:0, h:2.2, lit:.5,
+      info:[['Lagerplätze','12'],['Pakete','12'],['Zona','Baustelle']], watch:['Stock y ubicaciones','Paquetes y movimientos','Dónde está cada pieza'] },
+    { id:'fuhrpark',name:'Fuhrpark',  kind:'extra', color:'#94a3b8', agent:'flota',     ts:0, offen:0, ueb:0, d14:0, nach:0, expr:0, abruf:0, h:1.8, lit:.4,
+      info:[['Vehículos','6'],['En revisión','2'],['Reservas activas','4']], watch:['Disponibilidad de vehículos y máquinas','Revisiones y mantenimiento','Reservas por proyecto'] },
+    { id:'obras',   name:'Obras',     kind:'obras', color:'#ff6b35', agent:'—',         ts:48, offen:0, ueb:12, d14:0, nach:0, expr:0, abruf:0, h:4.6, lit:.7,
+      info:[['Proyectos activos','3'],['TS en total','48'],['Montaje atrasado','12']], watch:['Un solar por proyecto activo','Avance y próximos montajes','Alertas por proyecto'],
+      projects:[['DEV-001 Schulhaus Demo','16 TS · 12,5 % montado · 4 atrasados'],['DEV-002 Brücke Demo','16 TS · 12,5 % montado · 4 atrasados'],['DEV-003 Lagerhalle Demo','16 TS · 12,5 % montado · 4 atrasados']] },
+    { id:'torre',   name:'Torre IT',  kind:'extra', color:'#94a3b8', agent:'admin',     ts:0, offen:0, ueb:0, d14:0, nach:0, expr:0, abruf:0, h:5.2, lit:.3,
+      info:[['MethaDesk','solo lectura'],['Roles de acceso','3'],['Backups','correctos']], watch:['Salud del sistema y de la conexión','Backups y auditoría','Feedback de usuarios'] },
+  ];
+  // Anillo de 16 casillas alrededor de una plaza central (cuadrícula 5×5 sin el interior 3×3)
+  const RING = [[-2,-2],[-1,-2],[0,-2],[1,-2],[2,-2],[2,-1],[2,0],[2,1],[2,2],[1,2],[0,2],[-1,2],[-2,2],[-2,1],[-2,0],[-2,-1]];
+  const CELL = 3.6, HALF = 1.1;
+  B.forEach((b, i) => {
+    b.i = i; b.gx = RING[i][0] * CELL; b.gz = RING[i][1] * CELL;
+    b.kind = b.kind || 'abt';
+    b.h = b.h || 1.4 + b.ts * 0.55;
+    b.lit = b.lit ?? (b.ts ? 0.15 + 0.75 * (b.offen / b.ts) : 0.3);
+    b.working = b.kind === 'abt' ? (b.ueb > 0 || b.d14 > 0) : false;
+  });
+  const byId = Object.fromEntries(B.map((b) => [b.id, b]));
+  const TOWER = { id:'chief', name:'Methabau Chief', gx:0, gz:0, h:6.2, r:0.75 };
+
+  // ── Utilidades de color ──
+  const hex = (h) => { h = h.replace('#',''); return [0,2,4].map((k) => parseInt(h.substr(k,2),16)); };
+  const rgb = (c, a = 1) => `rgba(${c[0]|0},${c[1]|0},${c[2]|0},${a})`;
+  const mul = (c, f) => c.map((v) => Math.max(0, Math.min(255, v * f)));
+  const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+  const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const hash = (a, b, c, d) => { let x = (a*374761393 + b*668265263 + c*2147483647 + d*1274126177) | 0; x = Math.imul(x ^ (x >>> 13), 1274126177); x ^= x >>> 16; return ((x >>> 0) % 1000) / 1000; };
+
+  // ── Canvas, cámara, estado ──
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  const panel = document.getElementById('panel');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const state = { yaw: 0.62, pitch: 0.66, zoom: 1, auto: !reduce, selected: null, hover: null, W: 0, H: 0, dpr: 1, col: {} };
+  const DEF = { yaw: 0.62, pitch: 0.66, zoom: 1 };
+  let cY, sY, cP, sP, S;
+
+  function colors() {
+    const c = state.col;
+    c.bg = css('--bg'); c.text = css('--text'); c.muted = css('--muted'); c.border = css('--border');
+    c.ground = hex(css('--ground')); c.pad = hex(css('--pad')); c.plaza = hex(css('--plaza'));
+    c.wall = hex(css('--wall')); c.roof = hex(css('--roof')); c.edge = css('--edge'); c.winOff = hex(css('--win-off'));
+    c.primary = hex(css('--primary')); c.danger = hex(css('--danger'));
+    c.dark = document.documentElement.dataset.theme === 'dark';
+  }
+
+  function resize() {
+    const r = cv.getBoundingClientRect();
+    state.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    state.W = r.width; state.H = r.height;
+    cv.width = Math.max(1, Math.round(r.width * state.dpr)); cv.height = Math.max(1, Math.round(r.height * state.dpr));
+  }
+
+  function setupCam() {
+    cY = Math.cos(state.yaw); sY = Math.sin(state.yaw); cP = Math.cos(state.pitch); sP = Math.sin(state.pitch);
+    S = Math.min(state.W / (state.W < 600 ? 24 : 27), state.H / (16 + 5 * Math.abs(cP))) * state.zoom;
+  }
+  const P = (x, y, z) => {
+    const xr = x * cY + z * sY, zr = -x * sY + z * cY;
+    return { x: state.W / 2 + xr * S, y: state.H * 0.56 + (zr * sP - y * cP) * S, d: zr * cP + y * sP };
+  };
+  const rotZ = (nx, nz) => -nx * sY + nz * cY;   // componente hacia la cámara
+  const rotX = (nx, nz) => nx * cY + nz * sY;
+
+  function poly(pts, fill, stroke, lw) {
+    ctx.beginPath();
+    pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
+    ctx.closePath();
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+    if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 1; ctx.lineJoin = 'round'; ctx.stroke(); }
+  }
+  const proj3 = (arr) => arr.map((q) => P(q[0], q[1], q[2]));
+  const lerp3 = (a, b, t) => [a[0] + (b[0]-a[0]) * t, a[1] + (b[1]-a[1]) * t, a[2] + (b[2]-a[2]) * t];
+  const face = (p0, p1, p2, p3, u, v) => { // punto en la cara por coordenadas (u,v)
+    const bot = lerp3(p0, p1, u), top = lerp3(p3, p2, u);
+    return lerp3(bot, top, v);
+  };
+
+  // ── Dibujo de un edificio ──
+  function drawBuilding(b, t) {
+    const c = state.col, x0 = b.gx - HALF, x1 = b.gx + HALF, z0 = b.gz - HALF, z1 = b.gz + HALF, h = b.h;
+    const faces = [
+      { n:[0,0,1],  q:[[x0,0,z1],[x1,0,z1],[x1,h,z1],[x0,h,z1]] },
+      { n:[0,0,-1], q:[[x1,0,z0],[x0,0,z0],[x0,h,z0],[x1,h,z0]] },
+      { n:[1,0,0],  q:[[x1,0,z1],[x1,0,z0],[x1,h,z0],[x1,h,z1]] },
+      { n:[-1,0,0], q:[[x0,0,z0],[x0,0,z1],[x0,h,z1],[x0,h,z0]] },
+    ].filter((f) => rotZ(f.n[0], f.n[2]) > 0)
+     .sort((a, d) => rotZ(a.n[0], a.n[2]) - rotZ(d.n[0], d.n[2]));
+    const hits = [];
+    const sel = state.selected === b.id, hov = state.hover === b.id;
+    const accent = hex(b.color), orange = c.primary;
+    faces.forEach((f, fi) => {
+      const shade = c.dark ? 0.62 + 0.38 * (0.5 - 0.5 * rotX(f.n[0], f.n[2])) : 0.80 + 0.20 * (0.5 - 0.5 * rotX(f.n[0], f.n[2]));
+      const pts = proj3(f.q);
+      poly(pts, rgb(mul(c.wall, shade)), c.edge, 1);
+      hits.push(pts);
+      const [p0, p1, p2, p3] = f.q;
+      // franja de color del departamento en la base
+      const band = proj3([face(p0,p1,p2,p3,0,0), face(p0,p1,p2,p3,1,0), face(p0,p1,p2,p3,1,Math.min(0.2, 0.3 / h)), face(p0,p1,p2,p3,0,Math.min(0.2, 0.3 / h))]);
+      poly(band, rgb(mul(accent, shade), 0.95));
+      // ventanas
+      const cols = 4, rows = Math.max(1, Math.floor((h - 0.9) / 0.62));
+      for (let j = 0; j < rows; j++) for (let k = 0; k < cols; k++) {
+        const u0 = 0.14 + k * 0.19, u1 = u0 + 0.13;
+        const v0 = (0.5 + j * 0.62) / h, v1 = v0 + 0.34 / h;
+        if (v1 > 0.96) continue;
+        const w = proj3([face(p0,p1,p2,p3,u0,v0), face(p0,p1,p2,p3,u1,v0), face(p0,p1,p2,p3,u1,v1), face(p0,p1,p2,p3,u0,v1)]);
+        const lit = hash(b.i, fi, j, k) < b.lit;
+        poly(w, lit ? rgb(mix(orange, [255,255,255], 0.15), 0.92) : rgb(mul(c.winOff, shade)));
+      }
+    });
+    // tejado
+    const top = proj3([[x0,h,z0],[x1,h,z0],[x1,h,z1],[x0,h,z1]]);
+    poly(top, rgb(c.dark ? mix(c.roof, [255,255,255], 0.04) : c.roof), c.edge, 1);
+    hits.push(top);
+    const ins = proj3([[b.gx-0.45,h,b.gz-0.45],[b.gx+0.45,h,b.gz-0.45],[b.gx+0.45,h,b.gz+0.45],[b.gx-0.45,h,b.gz+0.45]]);
+    poly(ins, rgb(mix(accent, c.dark ? [15,23,42] : [255,255,255], 0.35), 0.9));
+    // contorno de selección / hover
+    if (sel || hov) {
+      ctx.save();
+      hits.forEach((pts) => poly(pts, null, rgb(orange), sel ? 3 : 2));
+      ctx.restore();
+    }
+    b._hits = hits;
+    b._label = P(b.gx, h + 0.1, b.gz);
+  }
+
+  // ── Torre central (orquestador) ──
+  function drawTower(t) {
+    const c = state.col, T = TOWER, N = 10, segs = [];
+    for (let k = 0; k < N; k++) {
+      const a0 = (k / N) * Math.PI * 2, a1 = ((k + 1) / N) * Math.PI * 2, am = (a0 + a1) / 2;
+      const nx = Math.cos(am), nz = Math.sin(am);
+      if (rotZ(nx, nz) <= 0) continue;
+      segs.push({ nx, nz, a0, a1 });
+    }
+    segs.sort((a, b) => rotZ(a.nx, a.nz) - rotZ(b.nx, b.nz));
+    const sel = state.selected === 'chief', hov = state.hover === 'chief', hits = [];
+    // halo en el suelo
+    const pulse = reduce ? 0.5 : 0.5 + 0.5 * Math.sin(t / 700);
+    const ring = []; for (let k = 0; k < 40; k++) { const a = k / 40 * Math.PI * 2; ring.push(P(Math.cos(a) * (1.6 + pulse * 0.5), 0.01, Math.sin(a) * (1.6 + pulse * 0.5))); }
+    poly(ring, rgb(c.primary, 0.10 + pulse * 0.08), rgb(c.primary, 0.5), 1.5);
+    segs.forEach((s) => {
+      const q = [[Math.cos(s.a0)*T.r,0,Math.sin(s.a0)*T.r],[Math.cos(s.a1)*T.r,0,Math.sin(s.a1)*T.r],[Math.cos(s.a1)*T.r,T.h,Math.sin(s.a1)*T.r],[Math.cos(s.a0)*T.r,T.h,Math.sin(s.a0)*T.r]];
+      const shade = c.dark ? 0.62 + 0.38 * (0.5 - 0.5 * rotX(s.nx, s.nz)) : 0.80 + 0.20 * (0.5 - 0.5 * rotX(s.nx, s.nz));
+      const pts = proj3(q);
+      poly(pts, rgb(mul(c.wall, shade)), c.edge, 1); hits.push(pts);
+      const [p0, p1, p2, p3] = q;
+      poly(proj3([face(p0,p1,p2,p3,0,0.80), face(p0,p1,p2,p3,1,0.80), face(p0,p1,p2,p3,1,0.93), face(p0,p1,p2,p3,0,0.93)]), rgb(mul(c.primary, shade)));
+    });
+    const topPts = []; for (let k = 0; k < N; k++) { const a = k / N * Math.PI * 2; topPts.push(P(Math.cos(a)*T.r, T.h, Math.sin(a)*T.r)); }
+    poly(topPts, rgb(c.primary), c.edge, 1); hits.push(topPts);
+    const tip = P(0, T.h + 1.1, 0), base = P(0, T.h, 0);
+    ctx.strokeStyle = rgb(mul(c.primary, 0.8)); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(base.x, base.y); ctx.lineTo(tip.x, tip.y); ctx.stroke();
+    ctx.fillStyle = rgb(c.primary, 0.35 + pulse * 0.4); ctx.beginPath(); ctx.arc(tip.x, tip.y, 7 + pulse * 4, 0, 7); ctx.fill();
+    ctx.fillStyle = rgb(c.primary); ctx.beginPath(); ctx.arc(tip.x, tip.y, 4.5, 0, 7); ctx.fill();
+    if (sel || hov) hits.forEach((pts) => poly(pts, null, rgb(c.primary), sel ? 3 : 2));
+    TOWER._hits = hits; TOWER._label = tip;
+  }
+
+  // ── Escena ──
+  const botImg = new Image();
+  botImg.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(document.querySelector('.brand svg').outerHTML.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" '));
+
+  function ground() {
+    const c = state.col, R = 13.5;
+    poly(proj3([[-R,0,-R],[R,0,-R],[R,0,R],[-R,0,R]]), rgb(c.ground), c.edge, 1);
+    // plaza central
+    const disc = (r, y = 0) => { const a = []; for (let k = 0; k < 64; k++) { const t = k / 64 * Math.PI * 2; a.push(P(Math.cos(t) * r, y, Math.sin(t) * r)); } return a; };
+    poly(disc(5.0), rgb(c.plaza), c.edge, 1);
+    poly(disc(3.3), null, rgb(c.primary, 0.35), 1.5);
+    poly(disc(2.2), rgb(mix(c.plaza, c.primary, c.dark ? 0.12 : 0.06)), null);
+    // aceras a la plaza
+    B.forEach((b) => {
+      const pad = 1.55;
+      poly(proj3([[b.gx-pad,0,b.gz-pad],[b.gx+pad,0,b.gz-pad],[b.gx+pad,0,b.gz+pad],[b.gx-pad,0,b.gz+pad]]), rgb(c.pad), c.edge, 1);
+      // sombra
+      const sx = b.h * 0.28, sz = b.h * 0.14;
+      ctx.save();
+      poly(proj3([[b.gx-HALF+sx,0.01,b.gz-HALF+sz],[b.gx+HALF+sx,0.01,b.gz-HALF+sz],[b.gx+HALF+sx,0.01,b.gz+HALF+sz],[b.gx-HALF+sx,0.01,b.gz+HALF+sz]]), c.dark ? 'rgba(0,0,0,.35)' : 'rgba(15,23,42,.10)');
+      ctx.restore();
+    });
+    const sa = []; for (let k = 0; k < 16; k++) { const t = k / 16 * Math.PI * 2; sa.push(P(Math.cos(t)*0.95, 0.01, Math.sin(t)*0.95)); }
+    poly(sa, c.dark ? 'rgba(0,0,0,.35)' : 'rgba(15,23,42,.10)');
+  }
+
+  function pill(text, x, y, color, badges) {
+    const c = state.col;
+    ctx.font = '700 12px Inter, system-ui, sans-serif';
+    const tw = ctx.measureText(text).width, bw = badges.length * 24;
+    const w = tw + 28 + bw, hgt = 24, rx = x - w / 2, ry = y - hgt - 6;
+    ctx.fillStyle = c.bg; ctx.globalAlpha = 0.94; ctx.beginPath(); ctx.roundRect(rx, ry, w, hgt, 12); ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = c.border; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(rx + 12, ry + hgt / 2, 4, 0, 7); ctx.fill();
+    ctx.fillStyle = c.text; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.fillText(text, rx + 22, ry + hgt / 2 + 0.5);
+    let bx = rx + 22 + tw + 12;
+    badges.forEach((bd) => {
+      ctx.fillStyle = bd.color; ctx.beginPath(); ctx.arc(bx + 6, ry + hgt / 2, 8, 0, 7); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = '700 10px Inter, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(String(bd.n), bx + 6, ry + hgt / 2 + 0.5);
+      ctx.textAlign = 'left'; bx += 24;
+    });
+  }
+
+  function frame(t) {
+    if (state.auto && !reduce) state.yaw += 0.0016;
+    resize(); colors(); setupCam();
+    ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+    ctx.clearRect(0, 0, state.W, state.H);
+    ctx.fillStyle = state.col.bg; ctx.fillRect(0, 0, state.W, state.H);
+    ground();
+    const objs = [...B.map((b) => ({ b, d: P(b.gx, 0, b.gz).d, t: 'b' })), { b: TOWER, d: P(0, 0, 0).d, t: 't' }].sort((a, d) => a.d - d.d);
+    objs.forEach((o) => (o.t === 'b' ? drawBuilding(o.b, t) : drawTower(t)));
+    // etiquetas siempre por encima
+    objs.forEach((o) => {
+      const b = o.b, p = b._label;
+      if (o.t === 't') {
+        ctx.drawImage(botImg, p.x - 15, p.y - 66, 30, 30);
+        if (state.W >= 600 || state.selected === 'chief' || state.hover === 'chief') pill('Methabau Chief', p.x, p.y - 34, rgbHex(state.col.primary), []);
+      } else {
+        const badges = []; if (b.ueb > 0) badges.push({ n: b.ueb, color: '#ef4444' }); if (b.nach > 0) badges.push({ n: b.nach, color: '#ff6b35' });
+        const compact = state.W < 600 && state.selected !== b.id && state.hover !== b.id;
+        if (compact) {
+          // En pantallas estrechas solo se dibujan las insignias; el nombre sale al tocar el edificio
+          badges.forEach((bd, k) => {
+            ctx.fillStyle = bd.color; ctx.beginPath(); ctx.arc(p.x + (k - (badges.length - 1) / 2) * 15, p.y - 8, 7, 0, 7); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.font = '700 9px Inter, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(String(bd.n), p.x + (k - (badges.length - 1) / 2) * 15, p.y - 7.5);
+          });
+        } else pill(b.name, p.x, p.y, b.color, badges);
+      }
+    });
+    requestAnimationFrame(frame);
+  }
+  const rgbHex = (c) => `rgb(${c[0]|0},${c[1]|0},${c[2]|0})`;
+
+  // ── Selección y puntería ──
+  const inPoly = (pt, pts) => { let r = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const a = pts[i], b = pts[j]; if (((a.y > pt.y) !== (b.y > pt.y)) && (pt.x < (b.x - a.x) * (pt.y - a.y) / (b.y - a.y) + a.x)) r = !r; } return r; };
+  function pick(x, y) {
+    const all = [...B, TOWER].filter((o) => o._hits).sort((a, d) => P(d.gx, 0, d.gz).d - P(a.gx, 0, a.gz).d); // más cercano primero
+    for (const o of all) if (o._hits.some((pts) => inPoly({ x, y }, pts))) return o.id;
+    return null;
+  }
+
+  let drag = null;
+  cv.addEventListener('pointerdown', (e) => { cv.setPointerCapture(e.pointerId); drag = { x: e.clientX, y: e.clientY, moved: false, yaw: state.yaw, pitch: state.pitch }; });
+  cv.addEventListener('pointermove', (e) => {
+    const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    if (drag) {
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (Math.abs(dx) + Math.abs(dy) > 4) { drag.moved = true; state.auto = false; sync(); cv.classList.add('drag'); }
+      if (drag.moved) { state.yaw = drag.yaw + dx * 0.008; state.pitch = Math.max(0.35, Math.min(1.1, drag.pitch + dy * 0.004)); }
+    } else {
+      const id = pick(x, y); state.hover = id; cv.classList.toggle('hover', !!id);
+    }
+  });
+  cv.addEventListener('pointerup', (e) => {
+    cv.classList.remove('drag');
+    if (drag && !drag.moved) { const r = cv.getBoundingClientRect(); select(pick(e.clientX - r.left, e.clientY - r.top)); }
+    drag = null;
+  });
+  cv.addEventListener('pointerleave', () => { if (!drag) { state.hover = null; cv.classList.remove('hover'); } });
+  cv.addEventListener('wheel', (e) => { e.preventDefault(); state.zoom = Math.max(0.6, Math.min(2.6, state.zoom * (e.deltaY < 0 ? 1.1 : 0.9))); }, { passive: false });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') select(null); });
+
+  // ── Panel ──
+  const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[ch]));
+  const kpi = (n, l, cls = '') => `<div class="kpi ${cls}"><div class="n">${esc(n)}</div><div class="l">${esc(l)}</div></div>`;
+  const FOOT = '<p class="foot">Vista previa con datos sintéticos del entorno de desarrollo. Los valores reales saldrán de las vistas de solo lectura <code>mc.*</code> de MethaDesk.</p>';
+
+  function overview() {
+    const abt = B.filter((b) => b.kind === 'abt');
+    const sum = (k) => abt.reduce((s, b) => s + b[k], 0);
+    panel.innerHTML = `<h2>Resumen de la ciudad</h2><p class="sub">Proyectos activos: 3 · Departamentos: ${abt.length}</p>
+      <div class="kpis">${kpi(sum('ts'), 'Teilsysteme en total')}${kpi(sum('offen'), 'Trabajo abierto', 'hot')}${kpi(sum('ueb'), 'Montaje atrasado', 'warn')}${kpi(sum('nach'), 'En retrabajo', 'hot')}</div>
+      <div class="box"><h3>Edificios</h3><div class="list">${B.map((b) => `<button data-id="${b.id}"><span class="dot" style="background:${b.color}"></span>${esc(b.name)}<span class="badges">${b.ueb ? `<span class="b r" title="Montaje atrasado">${b.ueb}</span>` : ''}${b.nach ? `<span class="b o" title="Retrabajo">${b.nach}</span>` : ''}</span></button>`).join('')}
+      <button data-id="chief"><span class="dot" style="background:#ff6b35"></span>Methabau Chief (orquestador)</button></div></div>${FOOT}`;
+  }
+
+  function detail(id) {
+    if (id === 'chief') {
+      panel.innerHTML = `<button class="back" data-id="">← Volver al resumen</button><h2>Methabau Chief</h2><p class="sub">Plaza central · orquestador</p>
+        <div class="box"><h3>Qué hace</h3><ul><li>Recibe tu petición y la divide en pasos</li><li>Reparte cada paso al agente del departamento</li><li>Presenta un plan y espera tu aprobación</li></ul></div>
+        <div class="actions"><button disabled title="Disponible cuando Hermes esté conectado">Abrir chat con Chief</button><button disabled title="Disponible con el backend">Lanzar una misión</button></div>${FOOT}`;
+      return;
+    }
+    const b = byId[id];
+    const status = b.kind === 'abt' ? `<span class="chip"><span class="dot" style="background:${b.working ? '#ff6b35' : '#22c55e'}"></span>Agente ${b.working ? 'trabajando' : 'libre'}</span>` : '';
+    let kpis;
+    if (b.kind === 'abt') kpis = kpi(`${b.offen} / ${b.ts}`, 'TS abiertos / total') + kpi(b.ueb, 'Montaje atrasado', b.ueb ? 'warn' : '') + kpi(b.d14, 'Montajes en 14 días') + kpi(b.nach, 'En retrabajo', b.nach ? 'hot' : '') + kpi(b.expr, 'Express') + kpi(b.abruf, 'Abrufe activos');
+    else kpis = b.info.map(([l, n]) => kpi(n, l)).join('');
+    const projects = b.projects ? `<div class="box"><h3>Proyectos</h3><ul>${b.projects.map(([a, s]) => `<li><b>${esc(a)}</b><br>${esc(s)}</li>`).join('')}</ul></div>` : '';
+    panel.innerHTML = `<button class="back" data-id="">← Volver al resumen</button>
+      <h2><span class="dot" style="background:${b.color};margin-right:8px"></span>${esc(b.name)}</h2>
+      <p class="sub">Edificio${b.agent !== '—' ? ` · agente <b>${esc(b.agent)}</b>` : ''} ${status}</p>
+      <div class="kpis">${kpis}</div>${projects}
+      <div class="box"><h3>Qué vigila este agente</h3><ul>${b.watch.map((w) => `<li>${esc(w)}</li>`).join('')}</ul></div>
+      <div class="actions"><button disabled title="Disponible cuando Hermes esté conectado">Abrir chat con el agente</button><button disabled title="Disponible con el backend">Ver Teilsysteme</button></div>${FOOT}`;
+  }
+
+  function select(id) { state.selected = id || null; id ? detail(id) : overview(); }
+  panel.addEventListener('click', (e) => { const el = e.target.closest('[data-id]'); if (el) select(el.dataset.id); });
+
+  // ── Controles ──
+  const $ = (id) => document.getElementById(id);
+  const sync = () => $('btnAuto').setAttribute('aria-pressed', String(state.auto));
+  $('btnAuto').onclick = () => { state.auto = !state.auto; sync(); };
+  $('zin').onclick = () => (state.zoom = Math.min(2.6, state.zoom * 1.2));
+  $('zout').onclick = () => (state.zoom = Math.max(0.6, state.zoom / 1.2));
+  $('reset').onclick = () => Object.assign(state, DEF);
+  function setTheme(dark) {
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    $('btnTheme').setAttribute('aria-pressed', String(dark)); $('btnTheme').textContent = dark ? 'Modo claro' : 'Modo oscuro';
+  }
+  $('btnTheme').onclick = () => setTheme(document.documentElement.dataset.theme !== 'dark');
+  setTheme(matchMedia('(prefers-color-scheme: dark)').matches);
+
+  sync(); overview(); requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

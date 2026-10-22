@@ -2,8 +2,9 @@
 
 Centro de control de agentes de METHABAU: una ciudad 3D donde cada edificio es una unidad de la empresa, alimentada (en solo lectura) por MethaDesk.
 
-- **Plan:** `PLAN-DESARROLLO.md` y `PLAN-MethaCity.md` (carpeta `Methabau_Citi` en OneDrive).
-- **Referencia visual:** `Methabau_Citi/preview/preview.html`.
+- **Plan:** [`docs/PLAN-DESARROLLO.md`](docs/PLAN-DESARROLLO.md) (fases y decisiones) y [`docs/PLAN-MethaCity.md`](docs/PLAN-MethaCity.md) (arquitectura, Hermes, seguridad, branding).
+- **Referencia visual:** [`preview/preview.html`](preview/preview.html).
+- **Backend:** [`sql/`](sql/) (rol `mc_readonly` y vistas `mc.*` sobre MethaDesk) y [`deploy/dev/`](deploy/dev/) (entorno de desarrollo en el VPS: réplica sintética, Supabase propia, Hermes).
 - **Rumbo:** sistema operativo de agentes inspirado en NEXORA (plan v3, `PLAN-DESARROLLO.md`), con el MVP de frontend al final de F5.
 - **Fase actual:** F5b (demo del MVP en el VPS): imagen Docker standalone, acceso temporal por usuario y contraseña, runbook de Dokploy en [`deploy/demo/README.md`](deploy/demo/README.md). MVP (F5) en `3033912`.
 

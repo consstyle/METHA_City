@@ -1,0 +1,65 @@
+# MethaCity · entorno de DESARROLLO en el VPS de Hostinger (Dokploy)
+#
+# Servicios:
+#   md-dev-db  Postgres con una RÉPLICA del esquema de MethaDesk y datos sintéticos.
+#              Aquí se prueban el rol mc_readonly y las vistas (carpeta ../../sql).
+#   hermes     Hermes Agent (un contenedor, un perfil por agente). Sin puertos publicados.
+#
+# La Supabase PROPIA de MethaCity no va aquí: se despliega con la plantilla de Supabase de
+# Dokploy (ver README, paso 7).
+#
+# Nada se publica al exterior: ni puertos ni dominios. Se accede por `docker exec` o por túnel SSH.
+# Variables: ver .env.example (en Dokploy, pestaña Environment).
+
+name: methacity-dev
+
+services:
+  md-dev-db:
+    image: postgres:16-alpine
+    container_name: methacity-dev-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?define POSTGRES_SUPERUSER_PASSWORD}
+      POSTGRES_DB: postgres
+    volumes:
+      - md-dev-db-data:/var/lib/postgresql/data
+    networks:
+      - methacity-dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    mem_limit: 1g
+    security_opt:
+      - no-new-privileges:true
+
+  hermes:
+    image: nousresearch/hermes-agent:stable
+    container_name: methacity-dev-hermes
+    command: ["gateway", "run"]
+    restart: unless-stopped
+    environment:
+      API_SERVER_ENABLED: "true"
+      API_SERVER_HOST: "0.0.0.0"
+      API_SERVER_KEY: ${HERMES_API_KEY:?define HERMES_API_KEY}
+    volumes:
+      - hermes-data:/opt/data
+    networks:
+      - methacity-dev
+    mem_limit: 3g
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  methacity-dev:
+    name: methacity-dev-net
+
+volumes:
+  md-dev-db-data:
+    name: methacity-dev-db-data
+  hermes-data:
+    # Nombre fijo: el asistente `setup` del README usa este mismo volumen.
+    name: methacity-hermes-data
+    external: true

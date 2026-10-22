@@ -1,0 +1,6 @@
+.env
+.env.*
+!.env.example
+# Réplica del esquema de producción de MethaDesk: no se publica (repositorio público).
+# Se regenera con tools/build-replica-schema.mjs desde el repositorio de MethaDesk.
+replica/10_schema.sql
