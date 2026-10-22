@@ -7,9 +7,9 @@ const visibleLabels = (page: import('@playwright/test').Page) =>
   );
 
 test.describe('F3 · sistema y ciudad viva', () => {
-  test('las etiquetas muestran los 8 edificios y un clic en una etiqueta selecciona', async ({ page }) => {
+  test('las etiquetas muestran los 6 edificios y las 3 obras y un clic en una etiqueta selecciona', async ({ page }) => {
     await openCity(page);
-    await expect.poll(async () => (await visibleLabels(page)).length).toBe(8);
+    await expect.poll(async () => (await visibleLabels(page)).length).toBe(9);
     await page.locator('[data-label="blech"]').click();
     await expect.poll(async () => (await cityState(page)).selected).toBe('blech');
     await expect(page.locator('.panel-hero h2')).toHaveText('Blechabteilung');
@@ -30,7 +30,7 @@ test.describe('F3 · sistema y ciudad viva', () => {
   test('la vista «Hierarchie» selecciona desde el organigrama y oculta los controles 3D', async ({ page }) => {
     await openCity(page);
     await page.getByRole('button', { name: 'Hierarchie' }).click();
-    await expect(page.locator('[data-org]')).toHaveCount(8);
+    await expect(page.locator('[data-org]')).toHaveCount(9);
     await expect(page.locator('.toolbar')).toHaveCount(0);
     await expect(page.locator('.labels-layer')).toBeHidden();
     await page.locator('[data-org="einkauf"]').click();
@@ -42,8 +42,8 @@ test.describe('F3 · sistema y ciudad viva', () => {
 
   test('el panel muestra el agente simulado y el resumen del Leitstand', async ({ page }) => {
     await openCity(page);
-    await expect(page.locator('.cockpit-summary')).toContainText(/von 9/);
-    await expect(page.locator('#agent-title')).toBeVisible();
+    await expect(page.locator('.cockpit-summary')).toContainText(/von 13/);
+    await expect(page.locator('#agent-title-avor')).toBeVisible();
     await expect(page.locator('.panel-section').getByRole('link', { name: 'Chat öffnen' })).toHaveAttribute('href', '/chat?agent=avor');
   });
 
@@ -52,7 +52,7 @@ test.describe('F3 · sistema y ciudad viva', () => {
     await page.locator('.module-rail').getByRole('link', { name: 'Leitstand' }).click();
     await expect(page).toHaveURL(/\/leitstand$/);
     await expect(page.locator('.module-rail [aria-current="page"]')).toHaveText('Leitstand');
-    await expect(page.locator('[data-agent]')).toHaveCount(9);
+    await expect(page.locator('[data-agent]')).toHaveCount(13);
     await expect(page.locator('.stat')).toHaveCount(5);
     await expect(page.locator('[data-service="hermes"]')).toContainText('Nicht verbunden');
     await expect(page.locator('.module-rail .rail-item.disabled')).toHaveCount(0);
@@ -70,7 +70,7 @@ test.describe('F3 · sistema y ciudad viva', () => {
 
   test('cada etiqueta queda encima de su edificio, con la línea guía saliendo de su borde inferior', async ({ page }) => {
     await openCity(page);
-    await expect.poll(async () => (await visibleLabels(page)).length).toBe(8);
+    await expect.poll(async () => (await visibleLabels(page)).length).toBe(9);
     await page.waitForTimeout(700);
     const boxes = await page.evaluate(() =>
       [...document.querySelectorAll<HTMLElement>('[data-label]')].map((el) => {
@@ -98,6 +98,6 @@ test.describe('F3 · sistema y ciudad viva', () => {
   test('el Leitstand avisa cuando MethaDesk falla, sin romper el resto', async ({ page }) => {
     await page.goto('/leitstand?szenario=fehler');
     await expect(page.locator('.methadesk-card [role="alert"]')).toBeVisible();
-    await expect(page.locator('[data-agent]')).toHaveCount(9);
+    await expect(page.locator('[data-agent]')).toHaveCount(7); // sin datos no hay obras ni equipos de proyecto
   });
 });

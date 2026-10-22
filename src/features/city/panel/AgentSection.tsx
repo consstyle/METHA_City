@@ -6,14 +6,18 @@ import { relativeTimeDe } from '@/lib/relativeTime';
 import { agentTaskText } from '@/os/format';
 import { useSim } from '@/os/OsProvider';
 
-/** Estado del agente de la unidad: qué hace, desde cuándo, y acceso a su perfil y al chat. */
-export function AgentSection({ m, agentId }: Readonly<{ m: Messages; agentId: string }>) {
+/**
+ * Estado del agente de la unidad: qué hace, desde cuándo, y acceso a su perfil y al chat.
+ * `title`: rótulo de la sección (en una obra hay dos agentes: Projektleitung y Bauleitung).
+ */
+export function AgentSection({ m, agentId, title }: Readonly<{ m: Messages; agentId: string; title?: string }>) {
   const sim = useSim();
   const agent = sim?.agents.find((a) => a.id === agentId);
+  const titleId = `agent-title-${agentId}`;
   return (
-    <section className="panel-section" aria-labelledby="agent-title">
-      <h3 id="agent-title" className="section-label">
-        {m.panel.agentTitle} <span className="sim-tag">{m.sim.badge}</span>
+    <section className="panel-section" aria-labelledby={titleId}>
+      <h3 id={titleId} className="section-label">
+        {title ?? m.panel.agentTitle} <span className="sim-tag">{m.sim.badge}</span>
       </h3>
       {!sim || !agent ? (
         <p className="muted">{m.cockpit.starting}</p>

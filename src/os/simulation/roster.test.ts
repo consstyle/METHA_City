@@ -15,9 +15,9 @@ test('contratar añade un agente especialista libre que sirve a su unidad', () =
   const bim = s.agents.find((a) => a.id === 'bim');
   assert.deepEqual(
     { kind: bim?.kind, unitId: bim?.unitId, state: bim?.state },
-    { kind: 'specialist', unitId: 'projektleitung', state: 'idle' },
+    { kind: 'specialist', unitId: 'planer', state: 'idle' },
   );
-  assert.equal(base.agents.length, 9, 'no muta');
+  assert.equal(base.agents.length, 7, 'no muta (Chief y las 6 unidades del campus)');
   assert.equal(addSpecialist(s, 'bim'), s, 'contratar dos veces no cambia nada');
   assert.throws(() => addSpecialist(base, 'nope'), /unknown specialist/);
 });
@@ -34,9 +34,9 @@ test('retirar quita el agente y recalcula los recuentos', () => {
 
 test('la unidad delega en sus especialistas, y estos trabajan con sus propias tareas', () => {
   const links = specialistLinks(['bim', 'kalkulation']);
-  assert.deepEqual(links, [{ from: 'projektleitung', to: 'bim' }, { from: 'projektleitung', to: 'kalkulation' }]);
-  assert.ok(delegationTargets('projektleitung', RELATIONS, links).includes('bim'));
-  assert.ok(!delegationTargets('bau', RELATIONS, links).includes('bim'));
+  assert.deepEqual(links, [{ from: 'planer', to: 'bim' }, { from: 'avor', to: 'kalkulation' }]);
+  assert.ok(delegationTargets('planer', RELATIONS, links).includes('bim'));
+  assert.ok(!delegationTargets('werkhof', RELATIONS, links).includes('bim'));
 
   let s = addSpecialist(addSpecialist(createSimulation(7, T0), 'bim'), 'kalkulation');
   const seen = new Set<string>();
@@ -44,6 +44,6 @@ test('la unidad delega en sus especialistas, y estos trabajan con sus propias ta
     s = step(s, at(i), RELATIONS, links);
     for (const e of s.activity) if (e.type === 'delegated' && (e.targetAgentId === 'bim' || e.targetAgentId === 'kalkulation')) seen.add(e.agentId);
   }
-  assert.deepEqual([...seen], ['projektleitung'], 'solo su unidad les delega');
+  assert.deepEqual([...seen].sort(), ['avor', 'planer'], 'solo su unidad les delega');
   assert.ok(s.activity.some((e) => e.agentId === 'bim' || e.agentId === 'kalkulation'), 'los especialistas trabajan');
 });

@@ -15,10 +15,44 @@ test('el estado inicial es el de preview.html', () => {
 
 test('select solo acepta unidades existentes', () => {
   const store = createCityStore();
-  store.getState().select('bau');
-  assert.equal(store.getState().selected, 'bau');
+  store.getState().select('werkhof');
+  assert.equal(store.getState().selected, 'werkhof');
   store.getState().select('no-existe');
-  assert.equal(store.getState().selected, 'bau');
+  store.getState().select('projekt:no-existe');
+  assert.equal(store.getState().selected, 'werkhof');
+});
+
+const PROJECTS = [
+  { projektId: 'a', projektnummer: 'DEV-001', projektname: 'GAZ Ausbildungszentrum, Beringen' },
+  { projektId: 'b', projektnummer: 'DEV-002', projektname: 'Innloc AG, Rothenburg' },
+];
+
+test('setSites coloca las obras una vez; con ellas se pueden seleccionar y enfocar', () => {
+  const store = createCityStore();
+  store.getState().setSites(PROJECTS);
+  const sites = store.getState().sites;
+  assert.deepEqual(sites.map((s) => s.id), ['projekt:a', 'projekt:b']);
+  store.getState().setSites([...PROJECTS].reverse());
+  assert.equal(store.getState().sites, sites, 'misma lista de proyectos: no se recoloca');
+  store.getState().select('projekt:b');
+  assert.equal(store.getState().selected, 'projekt:b');
+  store.getState().focus('projekt:b');
+  const { camera } = store.getState();
+  assert.equal(camera.focus, 'projekt:b');
+  assert.deepEqual([camera.target[0], camera.target[2]], [sites[1]!.position.x, sites[1]!.position.z]);
+  store.getState().focus('avor');
+  assert.ok(store.getState().camera.zoom > camera.zoom, 'una obra se enfoca con algo menos de zoom que un edificio');
+});
+
+test('si desaparece el proyecto de la obra seleccionada, la selección vuelve a AVOR', () => {
+  const store = createCityStore();
+  store.getState().setSites(PROJECTS);
+  store.getState().select('projekt:b');
+  store.getState().setSites(PROJECTS.slice(0, 1));
+  assert.equal(store.getState().selected, 'avor');
+  store.getState().select('projekt:a');
+  store.getState().setSites([...PROJECTS, { projektId: 'c', projektnummer: 'DEV-003', projektname: 'BB20, Wädenswil' }]);
+  assert.equal(store.getState().selected, 'projekt:a', 'si sigue existiendo, se conserva');
 });
 
 test('toggle cambia cada opción sin tocar las demás', () => {
@@ -98,4 +132,16 @@ test('el estado no se muta: cada acción crea objetos nuevos', () => {
   assert.notEqual(store.getState().camera, before.camera);
   assert.equal(before.options.tags, true);
   assert.equal(before.camera.zoom, 1);
+});
+
+test('con obras se puede acercar más (el zoom máximo crece con el encuadre) y un foco perdido se suelta', () => {
+  const store = createCityStore();
+  store.getState().setZoom(99);
+  const plain = store.getState().camera.zoom;
+  store.getState().setSites(PROJECTS);
+  store.getState().setZoom(99);
+  assert.ok(store.getState().camera.zoom > plain);
+  store.getState().focus('projekt:b');
+  store.getState().setSites(PROJECTS.slice(0, 1));
+  assert.equal(store.getState().camera.focus, null);
 });

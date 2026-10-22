@@ -2,7 +2,7 @@ import { createStore } from 'zustand/vanilla';
 import { CAMPUS_UNITS } from '@/features/city/model/campus';
 import { deriveRelations } from '@/features/city/model/hierarchy';
 import { appendEvents, createSimulation, step, withPins, type ExternalEvent, type MissionPins, type SimState } from './simulation/engine';
-import { addSpecialist, removeAgent, specialistLinks } from './simulation/roster';
+import { addSpecialist, projectLinks, removeAgent, specialistLinks, syncProjectAgents, type ProjectTeam } from './simulation/roster';
 
 /** Intervalo entre pasos de la simulación (ms). */
 export const SIMULATION_INTERVAL_MS = 2_500;
@@ -14,8 +14,11 @@ export interface OsState {
   readonly specialists: readonly string[];
   /** Agentes ocupados por pasos de misión (los decide `missionsStore`). */
   readonly pins: MissionPins;
+  /** Equipos de los proyectos activos (F5c): Projektleitung y Bauleitung de cada obra. */
+  readonly projects: readonly ProjectTeam[];
   tick(): void;
   syncSpecialists(roleIds: readonly string[]): void;
+  syncProjects(teams: readonly ProjectTeam[]): void;
   setPins(pins: MissionPins): void;
   /** Eventos de las misiones para el registro de actividad. */
   record(events: readonly ExternalEvent[]): void;
@@ -44,7 +47,16 @@ export function createOsStore({ seed = 42, now = () => new Date(), warmup = 0 }:
     sim: initial,
     specialists: [],
     pins: {},
-    tick: () => set({ sim: step(get().sim, now(), RELATIONS, specialistLinks(get().specialists), get().pins) }),
+    projects: [],
+    tick: () => set({
+      sim: step(get().sim, now(), RELATIONS, [...specialistLinks(get().specialists), ...projectLinks(get().projects)], get().pins),
+    }),
+    syncProjects: (teams) => {
+      const synced = syncProjectAgents(get().sim, teams);
+      // Mismos equipos: sin estado nuevo (cada página vuelve a sincronizar al montarse).
+      if (synced === get().sim && teams.length === get().projects.length) return;
+      set({ sim: withPins(synced, get().pins, now()), projects: [...teams] });
+    },
     syncSpecialists: (roleIds) => {
       const current = get().specialists;
       const same = current.length === roleIds.length && roleIds.every((id) => current.includes(id));

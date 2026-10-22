@@ -5,10 +5,10 @@ import { dotProgress, isRouteActive } from './links';
 
 test('isRouteActive reconoce la delegación por su ruta; la coordinación vale en ambos sentidos', () => {
   const h = { from: 'avor', to: 'werkhof', kind: 'hierarchy' } as const;
-  const c = { from: 'avor', to: 'bauleitung', kind: 'coordination' } as const;
+  const c = { from: 'avor', to: 'einkauf', kind: 'coordination' } as const;
   assert.equal(isRouteActive(h, [{ from: 'avor', to: 'werkhof' }]), true);
   assert.equal(isRouteActive(h, [{ from: 'werkhof', to: 'avor' }]), false);
-  assert.equal(isRouteActive(c, [{ from: 'bauleitung', to: 'avor' }]), true);
+  assert.equal(isRouteActive(c, [{ from: 'einkauf', to: 'avor' }]), true);
   assert.equal(isRouteActive(c, []), false);
 });
 

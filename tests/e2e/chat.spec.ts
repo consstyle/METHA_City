@@ -2,17 +2,17 @@ import { expect, test } from '@playwright/test';
 import { openCity } from './helpers';
 
 test.describe('F4 · Chat', () => {
-  test('conversación con streaming, respuesta con datos de MethaDesk y persistencia', async ({ page }) => {
-    await page.goto('/chat?agent=bauleitung');
+  test('conversación con la Bauleitung de una obra: streaming, números de su proyecto y persistencia', async ({ page }) => {
+    await page.goto('/chat?agent=bl-dev-001');
     const input = page.getByRole('textbox', { name: 'Nachricht' });
     await expect(input).toBeEnabled();
     await input.fill('Wie stehen die Zahlen in MethaDesk?');
     await input.press('Enter');
     await expect(page.getByRole('button', { name: 'Stopp' })).toBeVisible();
     const reply = page.locator('.bubble[data-role="agent"]');
-    await expect(reply).toContainText('In MethaDesk sehe ich für Bauleitung', { timeout: 15_000 });
+    await expect(reply).toContainText('Im Projekt DEV-001 sind', { timeout: 15_000 });
     await expect(page.getByRole('button', { name: 'Senden' })).toBeVisible();
-    await expect(page.locator('[data-conversation="bauleitung"]')).toHaveCount(1);
+    await expect(page.locator('[data-conversation="bl-dev-001"]')).toHaveCount(1);
 
     await page.reload();
     await expect(page.locator('.bubble[data-role="user"]')).toHaveText(/Wie stehen die Zahlen/);
@@ -58,8 +58,8 @@ test.describe('F4 · Chat', () => {
     await input.press('Enter');
     await expect(page.locator('.bubble[data-role="agent"]')).toContainText('Methabau Chief', { timeout: 15_000 });
 
-    await page.locator('#chat-agent').selectOption('bau');
-    await expect(page).toHaveURL(/agent=bau/);
+    await page.locator('#chat-agent').selectOption('planer');
+    await expect(page).toHaveURL(/agent=planer/);
     await page.getByRole('button', { name: '+ Neue Unterhaltung' }).click();
     await page.locator('.module-rail').getByRole('link', { name: 'Chat' }).click();
     await expect(page.locator('#chat-agent')).toHaveValue('chief');

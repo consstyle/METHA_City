@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { islandWobble } from '@/features/city/model/island';
 import { createMaterials, ORANGE, type Materials } from './materials';
 
 export type Point3 = readonly [number, number, number];
@@ -12,7 +13,7 @@ interface BoxItem {
 export function ellipsePoints(rx: number, rz: number, y: number, scale = 1): Point3[] {
   return Array.from({ length: 129 }, (_, i) => {
     const a = (i / 128) * Math.PI * 2;
-    const f = 1 + 0.095 * Math.sin(3 * a + 0.3) + 0.055 * Math.cos(5 * a) - 0.045 * Math.sin(2 * a);
+    const f = islandWobble(a);
     return [Math.cos(a) * rx * f * scale, y, Math.sin(a) * rz * f * scale] as const;
   });
 }

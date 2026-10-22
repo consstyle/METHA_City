@@ -12,6 +12,9 @@ import {
 } from './hierarchy';
 import type { UnitDef } from './types';
 
+const base = CAMPUS_UNITS[0] as UnitDef;
+const make = (patch: Partial<UnitDef>): UnitDef => ({ ...base, subunits: [], ...patch });
+
 test('el campus definido no tiene problemas de estructura', () => {
   assert.deepEqual(validateCampus(CAMPUS_UNITS), []);
 });
@@ -19,23 +22,22 @@ test('el campus definido no tiene problemas de estructura', () => {
 test('childrenOf devuelve los hijos ordenados por código', () => {
   assert.deepEqual(
     childrenOf(CAMPUS_UNITS, 'avor').map((u) => u.id),
-    ['einkauf', 'schlosserei', 'blech', 'werkhof'],
+    ['planer', 'einkauf', 'schlosserei', 'blech', 'werkhof'],
   );
-  assert.deepEqual(childrenOf(CAMPUS_UNITS, 'projektleitung').map((u) => u.id), ['bauleitung']);
-  assert.deepEqual(childrenOf(CAMPUS_UNITS, 'bau'), []);
+  assert.deepEqual(childrenOf(CAMPUS_UNITS, 'werkhof'), []);
 });
 
 test('ancestorsOf recorre la cadena hasta la raíz del distrito', () => {
-  assert.deepEqual(ancestorsOf(CAMPUS_UNITS, 'bau').map((u) => u.id), ['bauleitung', 'projektleitung']);
+  assert.deepEqual(ancestorsOf(CAMPUS_UNITS, 'planer').map((u) => u.id), ['avor']);
   assert.deepEqual(ancestorsOf(CAMPUS_UNITS, 'avor'), []);
 });
 
-test('unitsByDistrict separa los dos distritos en orden de código', () => {
+test('unitsByDistrict: todo el campus es industrial; las obras no son unidades (F5c)', () => {
   assert.deepEqual(
     unitsByDistrict(CAMPUS_UNITS, 'industrial').map((u) => u.code),
-    ['01', '02', '03', '04', '05'],
+    ['01', '02', '03', '04', '05', '06'],
   );
-  assert.deepEqual(unitsByDistrict(CAMPUS_UNITS, 'project').map((u) => u.code), ['06', '07', '08']);
+  assert.deepEqual(unitsByDistrict(CAMPUS_UNITS, 'project'), []);
 });
 
 test('unitById encuentra una unidad y devuelve undefined si no existe', () => {
@@ -43,30 +45,23 @@ test('unitById encuentra una unidad y devuelve undefined si no existe', () => {
   assert.equal(unitById(CAMPUS_UNITS, 'no-existe'), undefined);
 });
 
-test('deriveRelations crea una relación jerárquica por hijo y la coordinación AVOR ↔ Bauleitung', () => {
+test('deriveRelations crea una relación jerárquica por hijo; la coordinación con la obra es de los agentes', () => {
   const relations = deriveRelations(CAMPUS_UNITS);
-  const hierarchy = relations.filter((r) => r.kind === 'hierarchy');
-  assert.equal(hierarchy.length, 6);
-  assert.equal(relations.length, 7);
-  assert.ok(hierarchy.some((r) => r.from === 'bauleitung' && r.to === 'bau'));
-  assert.deepEqual(
-    relations.filter((r) => r.kind === 'coordination'),
-    [{ from: 'avor', to: 'bauleitung', kind: 'coordination' }],
-  );
+  assert.equal(relations.length, 5);
+  assert.ok(relations.every((r) => r.kind === 'hierarchy' && r.from === 'avor'));
+  const withCoordination = deriveRelations(CAMPUS_UNITS, [{ from: 'einkauf', to: 'werkhof' }]);
+  assert.deepEqual(withCoordination.filter((r) => r.kind === 'coordination'), [{ from: 'einkauf', to: 'werkhof', kind: 'coordination' }]);
 });
 
 test('labelAnchorHeight reproduce las alturas de etiqueta del HTML por arquetipo', () => {
   const h = (id: string) => labelAnchorHeight(unitById(CAMPUS_UNITS, id) as UnitDef);
   assert.equal(h('avor'), 10.5);
-  assert.equal(h('projektleitung'), 7.75);
-  assert.equal(h('bau'), 4);
+  assert.equal(h('planer'), 7.75);
+  assert.equal(labelAnchorHeight(make({ archetype: 'site', size: { w: 4.8, d: 4.1, h: 2.8 } })), 4);
   assert.equal(h('einkauf'), 4 + 1.1);
   assert.equal(h('blech'), 2.3 + 1.25);
   assert.equal(h('werkhof'), 2.4 + 1.05);
 });
-
-const base = CAMPUS_UNITS[0] as UnitDef;
-const make = (patch: Partial<UnitDef>): UnitDef => ({ ...base, subunits: [], ...patch });
 
 test('validateCampus detecta ids y códigos duplicados', () => {
   const units = [make({ id: 'avor', code: '01' }), make({ id: 'avor', code: '01', parent: null })];
@@ -79,12 +74,12 @@ test('validateCampus detecta padres inexistentes, de otro distrito y niveles inc
   const units = [
     make({ id: 'avor', code: '01', level: 0, parent: null, methadesk: ['avor'] }),
     make({ id: 'einkauf', code: '02', level: 2, parent: 'avor', methadesk: ['einkauf'] }),
-    make({ id: 'bau', code: '08', level: 1, parent: 'bauleitung', district: 'project', methadesk: ['bau'] }),
-    make({ id: 'werkhof', code: '05', level: 1, parent: 'avor', district: 'project', methadesk: ['werkhof'] }),
+    make({ id: 'blech', code: '05', level: 1, parent: 'fantasma' as never, methadesk: ['blech'] }),
+    make({ id: 'werkhof', code: '06', level: 1, parent: 'avor', district: 'project', methadesk: ['werkhof'] }),
   ];
   const problems = validateCampus(units, { requireFullCoverage: false });
   assert.ok(problems.some((p) => p.includes('einkauf') && p.includes('nivel')));
-  assert.ok(problems.some((p) => p.includes('bau') && p.includes('padre inexistente')));
+  assert.ok(problems.some((p) => p.includes('blech') && p.includes('padre inexistente')));
   assert.ok(problems.some((p) => p.includes('werkhof') && p.includes('otro distrito')));
 });
 

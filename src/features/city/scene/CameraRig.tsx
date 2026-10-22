@@ -3,10 +3,12 @@
 import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { useStore } from 'zustand';
 import type { CityStore } from '@/features/city/state/cityStore';
 import {
   AUTO_ROTATE_SPEED, CAMERA_DEFAULTS, applyDrag, applyPinch, applyWheel, blendFactor, frustum, orbitPosition,
 } from './camera/cameraMath';
+import { extentOf } from '@/features/city/state/cityStore';
 import { handleCameraKey } from './camera/keyboard';
 
 interface Props {
@@ -21,6 +23,8 @@ export function CameraRig({ store, reducedMotion }: Props) {
   const gl = useThree((s) => s.gl);
   const pose = useRef({ yaw: CAMERA_DEFAULTS.yaw, pitch: CAMERA_DEFAULTS.pitch, zoom: CAMERA_DEFAULTS.zoom, target: new THREE.Vector3(...CAMERA_DEFAULTS.target) });
   const wanted = useRef(new THREE.Vector3());
+  // Un número: el selector solo provoca render cuando cambian las obras.
+  const extent = useStore(store, extentOf);
 
   useFrame((_, delta) => {
     const dt = Math.min(0.07, delta);
@@ -34,7 +38,7 @@ export function CameraRig({ store, reducedMotion }: Props) {
     p.zoom += (c.zoom - p.zoom) * k;
     p.target.lerp(wanted.current.set(...c.target), k);
 
-    const f = frustum(size.width / Math.max(1, size.height), p.zoom);
+    const f = frustum(size.width / Math.max(1, size.height), p.zoom, extent);
     camera.left = f.left;
     camera.right = f.right;
     camera.top = f.top;
@@ -67,7 +71,7 @@ export function CameraRig({ store, reducedMotion }: Props) {
     const move = (e: PointerEvent) => {
       if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pointers.size === 2 && pinch) {
-        store.getState().setZoom(applyPinch(pinch.zoom, pinch.distance, spread()));
+        store.getState().setZoom(applyPinch(pinch.zoom, pinch.distance, spread(), extentOf(store.getState())));
         return;
       }
       if (!drag || pointers.size !== 1) return;
@@ -88,7 +92,7 @@ export function CameraRig({ store, reducedMotion }: Props) {
     };
     const wheel = (e: WheelEvent) => {
       e.preventDefault();
-      store.getState().setZoom(applyWheel(store.getState().camera.zoom, e.deltaY));
+      store.getState().setZoom(applyWheel(store.getState().camera.zoom, e.deltaY, extentOf(store.getState())));
     };
     const key = (e: KeyboardEvent) => {
       if (handleCameraKey(e.key, store.getState())) e.preventDefault();

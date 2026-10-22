@@ -36,9 +36,11 @@ export function createMission(id: string, input: MissionInput, now: Date, steps:
 
 /**
  * Quién pasa el trabajo al agente del paso: su unidad superior (así se enciende la ruta de la
- * ciudad entre ambas) o, para las cabeceras, el Chief.
+ * ciudad entre ambas), la Projektleitung de su proyecto para la Bauleitung (F5c) o, para las
+ * cabeceras y la Projektleitung, el Chief.
  */
 function delegator(agentId: string): string {
+  if (/^bl-/.test(agentId)) return `pl-${agentId.slice(3)}`;
   const unit = CAMPUS_UNITS.find((u) => (u.agent ?? u.id) === agentId);
   const parent = unit?.parent ?? specialistById(agentId)?.unitId ?? null;
   return parent ? (CAMPUS_UNITS.find((u) => u.id === parent)?.agent ?? parent) : ORCHESTRATOR_AGENT;

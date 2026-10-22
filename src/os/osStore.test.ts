@@ -46,18 +46,33 @@ test('syncSpecialists añade y quita especialistas según las contrataciones act
 test('setPins ocupa a los agentes al momento y record añade eventos de misión', () => {
   let t = NOW.getTime();
   const store = createOsStore({ now: () => new Date(t) });
-  store.getState().setPins({ bau: 'Montageplan prüfen' });
-  const bau = () => store.getState().sim.agents.find((a) => a.id === 'bau')!;
+  store.getState().setPins({ 'bl-dev-001': 'Montageplan prüfen' });
+  store.getState().syncProjects([{ projektId: 'mock-DEV-001', agents: { pl: 'pl-dev-001', bl: 'bl-dev-001' } }]);
+  const bau = () => store.getState().sim.agents.find((a) => a.id === 'bl-dev-001')!;
   assert.deepEqual([bau().state, bau().focus], ['working', 'Montageplan prüfen']);
   const before = store.getState().sim;
-  store.getState().setPins({ bau: 'Montageplan prüfen' });
+  store.getState().setPins({ 'bl-dev-001': 'Montageplan prüfen' });
   assert.equal(store.getState().sim, before, 'mismos pins: sin cambios');
   t += SIMULATION_INTERVAL_MS;
   store.getState().tick();
   assert.equal(bau().focus, 'Montageplan prüfen', 'el paso del motor respeta el pin');
-  store.getState().record([{ type: 'completed', agentId: 'bau', targetAgentId: null, note: 'Montageplan prüfen', at: new Date(t).toISOString() }]);
+  store.getState().record([{ type: 'completed', agentId: 'bl-dev-001', targetAgentId: null, note: 'Montageplan prüfen', at: new Date(t).toISOString() }]);
   assert.equal(store.getState().sim.activity.at(-1)!.note, 'Montageplan prüfen');
   store.getState().record([]);
   store.getState().setPins({});
   assert.deepEqual([bau().state, bau().focus], ['idle', null]);
+});
+
+test('syncProjects añade y quita los equipos de las obras; con los mismos equipos no cambia nada', () => {
+  const store = createOsStore({ now: () => NOW });
+  const team = { projektId: 'mock-DEV-001', agents: { pl: 'pl-dev-001', bl: 'bl-dev-001' } };
+  store.getState().syncProjects([team]);
+  const ids = () => store.getState().sim.agents.filter((a) => a.kind === 'project').map((a) => a.id);
+  assert.deepEqual(ids(), ['pl-dev-001', 'bl-dev-001']);
+  const before = store.getState().sim;
+  store.getState().syncProjects([team]);
+  assert.equal(store.getState().sim, before);
+  store.getState().syncProjects([]);
+  assert.deepEqual(ids(), []);
+  assert.deepEqual(store.getState().projects, []);
 });

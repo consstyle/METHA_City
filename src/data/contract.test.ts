@@ -38,7 +38,7 @@ test('el snapshot acepta instantes con desplazamiento y rechaza unidades repetid
   const base = { source: 'mock', generatedAt: '2026-10-21T12:00:00+02:00', dataAsOf: null, units: [], projects: [] };
   assert.equal(CitySnapshotSchema.safeParse(base).success, true);
   const unit = {
-    unitId: 'bau', hasData: false,
+    unitId: 'werkhof', hasData: false,
     ts: { total: 0, offen: 0, inPlanung: 0, offenStatus: 0, inArbeit: 0, bestellt: 0, fertig: 0, teilgeliefert: 0, geliefert: 0, verbaut: 0, nachbearbeitung: 0, express: 0 },
     alerts: { montageUeberfaellig: 0, planUeberfaellig: 0, lieferungUeberfaellig: 0, nachbearbeitung: 0, express: 0, abrufAktiv: 0, montageNaechste14Tage: 0 },
     naechsterMontagetermin: null, gruppen: { offen: 0, inArbeit: 0, fertig: 0 }, departments: [],
@@ -46,7 +46,7 @@ test('el snapshot acepta instantes con desplazamiento y rechaza unidades repetid
   };
   const result = CitySnapshotSchema.safeParse({ ...base, units: [unit, unit] });
   assert.equal(result.success, false);
-  assert.match(JSON.stringify(result.error?.issues), /unidad repetida: bau/);
+  assert.match(JSON.stringify(result.error?.issues), /unidad repetida: werkhof/);
 });
 
 test('parseAbteilungRows descarta filas inválidas, ids desconocidos y duplicados sin tumbar el resto', () => {

@@ -2,7 +2,8 @@
 -- 20_seed.sql  ·  réplica de MethaDesk (desarrollo)  ·  DATOS SINTÉTICOS
 -- ----------------------------------------------------------------------------
 -- Todo es inventado: personas «Demo …», correos @methacity.test, proyectos DEV-00x.
--- No contiene ningún dato real de Methabau. Las fechas son relativas a hoy, así que
+-- Los nombres de los proyectos de ejemplo los eligió el equipo de Methabau; las cifras
+-- (Teilsysteme, montajes, pesos) son inventadas. Las fechas son relativas a hoy, así que
 -- siempre hay trabajo atrasado, próximo y futuro. Re-ejecutable (ids deterministas).
 -- Ejecutar como md_owner en la base `methadesk`, después de 10_schema.sql.
 -- ============================================================================
@@ -57,8 +58,8 @@ SELECT md5('proj-' || p.n)::uuid, p.name, 'DEV-00' || p.n, p.ort, p.kt, 'aktiv',
        'Demo Projektleiter', 'Demo Bauleitung', 'Demo Bau', 'Demo Planer',
        md5('user-projektleiter')::uuid::text, md5('user-bauleiter')::uuid::text,
        md5('user-bau')::uuid::text, md5('user-planer')::uuid::text
-FROM (VALUES (1,'Schulhaus Demo','Zürich','ZH',false), (2,'Brücke Demo','Bern','BE',false),
-             (3,'Lagerhalle Demo','Basel','BS',false), (4,'Altbau Demo (archiviert)','Luzern','LU',true))
+FROM (VALUES (1,'GAZ Ausbildungszentrum, Beringen','Beringen','SH',false), (2,'Innloc AG, Rothenburg','Rothenburg','LU',false),
+             (3,'BB20, Wädenswil','Wädenswil','ZH',false), (4,'Altbau Demo (archiviert)','Luzern','LU',true))
      AS p(n, name, ort, kt, arch)
 ON CONFLICT (id) DO NOTHING;
 

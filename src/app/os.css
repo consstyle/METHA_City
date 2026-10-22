@@ -68,6 +68,7 @@ a.rail-item:hover { background: #ffffff08; color: #fff; }
 .tstag.bereit { background: #e3dac4; }
 .tstag.fertig { background: #7fc4e0; }
 .legend .ts { width: 12px; height: 8px; border-radius: 2px; background: var(--orange); }
+.legend .road { height: 5px; background: #20272c; border-top: 1px solid #717878; border-bottom: 1px solid #717878; }
 .ts-feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .ts-feed.paused { opacity: 0.55; }
 .ts-row {
@@ -103,8 +104,8 @@ a.rail-item:hover { background: #ffffff08; color: #fff; }
 }
 .org-children::before { content: ''; width: 1px; height: 26px; background: #f26a2177; position: absolute; left: 50%; top: -27px; }
 .org-children .org-node { font-size: 11px; padding: 13px 10px; }
-.org-chain { display: grid; gap: 28px; }
-.org-chain .org-node:not(:last-child)::after { content: '↓'; position: absolute; top: calc(100% + 5px); left: 50%; font-size: 16px; color: #b4bbb7; }
+/* Obras de los proyectos (F5c): independientes entre sí, sin flechas. */
+.org-sites { display: grid; gap: 12px; }
 .org-bridge {
   max-width: 600px; margin: 25px auto 0; padding: 14px; border: 1px dashed #9b9a8b66; border-radius: 7px; text-align: center;
   font-size: 11px; color: #b9bcb6; line-height: 1.8;
@@ -235,7 +236,6 @@ a.rail-item:hover { background: #ffffff08; color: #fff; }
   .org-node { font-size: 10px; padding: 10px; }
   .org-children { grid-template-columns: 1fr; gap: 7px; }
   .org-children .org-node { font-size: 9px; padding: 9px; }
-  .org-chain { gap: 30px; }
   .org-node span { font-size: 6px; line-height: 1.6; }
   .org-intro { display: none; }
   .panel-hero { margin-top: 17px; }

@@ -40,8 +40,12 @@ export const deAgents = {
   },
   profiles: {
     chief: {
-      responsibilities: ['Verteilt Aufträge auf beide Bezirke', 'Hält Prioritäten und Engpässe im Blick', 'Berichtet an die Geschäftsleitung'],
-      memory: ['Wochenberichte gehen am Freitag an die Geschäftsleitung', 'Produktion / AVOR und Bauleitung stimmen sich über die Koordinationsbrücke ab'],
+      responsibilities: ['Verteilt Aufträge auf den Campus und die Baustellen', 'Hält Prioritäten und Engpässe im Blick', 'Berichtet an die Geschäftsleitung'],
+      memory: ['Wochenberichte gehen am Freitag an die Geschäftsleitung', 'Jedes Projekt hat seine eigene Projektleitung und Bauleitung'],
+    },
+    planer: {
+      responsibilities: ['Erstellt und plant die Teilsysteme', 'Setzt den Plan-Status «fertig»', 'Arbeitet Planänderungen der Baustellen ein'],
+      memory: ['Teilsysteme mit Plan-Status «fertig» gehen sofort an AVOR', 'Abgabetermine werden mit AVOR abgestimmt'],
     },
     avor: {
       responsibilities: ['Arbeitsvorbereitung der Teilsysteme', 'Verteilt Arbeit an Schlosserei, Blech, Einkauf und Werkhof', 'Gibt fertige Teilsysteme an die Baustelle frei'],
@@ -64,16 +68,12 @@ export const deAgents = {
       memory: ['Versand bis 15 Uhr geht am Folgetag raus', 'Teilmengen werden dem Bau sofort gemeldet'],
     },
     projektleitung: {
-      responsibilities: ['Führt die laufenden Projekte', 'Bewertet Risiken und Meilensteine', 'Stimmt Planfreigaben mit den Planern ab'],
-      memory: ['Überfällige Montagen werden wöchentlich bewertet', 'Planer liefern Freigaben über MethaDesk'],
+      responsibilities: ['Führt das Projekt', 'Bewertet Risiken und Meilensteine', 'Stimmt Planfreigaben mit dem Planer ab'],
+      memory: ['Überfällige Montagen werden wöchentlich bewertet', 'Der Planer liefert die Pläne über MethaDesk'],
     },
     bauleitung: {
-      responsibilities: ['Leitet die Baustellen', 'Plant Abrufe und Montagetermine', 'Koordiniert mit Produktion / AVOR'],
-      memory: ['Abrufe für die nächsten Tage werden täglich geprüft', 'Die Koordination mit AVOR läuft über die Brücke'],
-    },
-    bau: {
-      responsibilities: ['Ausführung und Montage vor Ort', 'Materialbedarf der Baustelle', 'Einsatz der Montageteams und Subunternehmer'],
-      memory: ['Montagepläne gelten für 14 Tage', 'Gelieferte Teile werden bei Erhalt bestätigt'],
+      responsibilities: ['Leitet die Baustelle des Projekts', 'Plant Abrufe und Montagetermine', 'Koordiniert mit Produktion / AVOR'],
+      memory: ['Abrufe für die nächsten Tage werden täglich geprüft', 'Fertige Teilsysteme kommen über die Strasse von AVOR'],
     },
   },
   specialistProfile: {
@@ -84,6 +84,11 @@ export const deAgents = {
     orchestrator: 'ORCHESTRATOR',
     unit: 'EINHEIT',
     specialist: 'SPEZIALIST',
+    project: 'PROJEKT',
+  },
+  projectAgents: {
+    pl: 'Projektleitung {nr}',
+    bl: 'Bauleitung {nr}',
   },
   directory: {
     eyebrow: 'AGENTEN',
@@ -173,6 +178,7 @@ export const deAgents = {
     kpisNone: 'Für {unit} liegen in MethaDesk noch keine Daten vor.',
     kpisUnavailable: 'Die Daten aus MethaDesk sind gerade nicht verfügbar. Ich versuche es später noch einmal.',
     kpisChief: 'Über alle Einheiten sehe ich in MethaDesk {overdue} überfällige Montagen und {rework} Nachbearbeitungen.',
+    kpisProject: 'Im Projekt {projekt} sind {verbaut} von {total} Teilsystemen verbaut, {overdue} Montagen überfällig und {rework} in Nachbearbeitung.',
     kpisSpecialist: 'Eigene Zahlen in MethaDesk habe ich nicht. Ich arbeite mit den Daten von {unit}.',
     help: 'Ich bin zuständig für: {list}. Frag mich nach meinem Status, nach den Zahlen aus MethaDesk oder gib mir einen Auftrag.',
     delegate: 'Verstanden. Ich übernehme den Auftrag und stimme mich mit {target} ab.',

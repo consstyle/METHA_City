@@ -316,7 +316,7 @@
   "projekte": [
     {
       "projektnummer": "DEV-001",
-      "projektname": "Schulhaus Demo",
+      "projektname": "GAZ Ausbildungszentrum, Beringen",
       "ts_gesamt": 16,
       "ts_verbaut": 2,
       "ts_nachbearbeitung": 1,
@@ -332,7 +332,7 @@
     },
     {
       "projektnummer": "DEV-002",
-      "projektname": "Brücke Demo",
+      "projektname": "Innloc AG, Rothenburg",
       "ts_gesamt": 16,
       "ts_verbaut": 2,
       "ts_nachbearbeitung": 2,
@@ -348,7 +348,7 @@
     },
     {
       "projektnummer": "DEV-003",
-      "projektname": "Lagerhalle Demo",
+      "projektname": "BB20, Wädenswil",
       "ts_gesamt": 16,
       "ts_verbaut": 2,
       "ts_nachbearbeitung": 2,

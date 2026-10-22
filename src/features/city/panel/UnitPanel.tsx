@@ -1,15 +1,17 @@
 'use client';
 
-import { CAMPUS_COORDINATION, CAMPUS_UNITS } from '@/features/city/model/campus';
+import { CAMPUS_UNITS } from '@/features/city/model/campus';
 import { childrenOf, unitById } from '@/features/city/model/hierarchy';
+import type { UnitDef } from '@/features/city/model/types';
 import { useCity, useCityStoreApi } from '@/features/city/state/CityStoreProvider';
 import type { SnapshotResult } from '@/data/load';
 import type { MockScenario } from '@/data/mock/scenarios';
-import { format, type Messages } from '@/i18n';
+import type { Messages } from '@/i18n';
 import { AgentSection } from './AgentSection';
 import { CockpitSummary } from './CockpitSummary';
 import { FlowFeed } from './FlowFeed';
 import { MethadeskSection } from './MethadeskSection';
+import { SITE_ICON, SiteDetails } from './SitePanel';
 import { StructureTree } from './StructureTree';
 
 interface Props {
@@ -26,23 +28,14 @@ export const BUILDING_ICON = (
   </svg>
 );
 
-/** Panel lateral de preview.html, ampliado con el agente de la unidad y sus datos de MethaDesk. */
-export function UnitPanel({ m, result, scenario }: Props) {
+/** Ficha de un edificio del campus: papel, dependencias, agente y datos de MethaDesk. */
+function UnitDetails({ m, unit, result, scenario }: Props & { readonly unit: UnitDef }) {
   const store = useCityStoreApi();
-  const selected = useCity((s) => s.selected);
-  const unit = unitById(CAMPUS_UNITS, selected) ?? CAMPUS_UNITS[0]!;
   const parent = unit.parent ? unitById(CAMPUS_UNITS, unit.parent) : undefined;
   const children = childrenOf(CAMPUS_UNITS, unit.id);
-  const statuses = result.ok ? result.snapshot.units : [];
-  const status = statuses.find((s) => s.unitId === unit.id);
-  const bridge = CAMPUS_COORDINATION[0];
-
+  const status = result.ok ? result.snapshot.units.find((s) => s.unitId === unit.id) : undefined;
   return (
     <>
-      <CockpitSummary m={m} />
-      <div className="aside-top">
-        {m.panel.explore} <b>{unit.code} / {pad2(CAMPUS_UNITS.length)}</b>
-      </div>
       <div className="panel-hero">
         <div className="building-symbol">{BUILDING_ICON}</div>
         <div>
@@ -65,18 +58,38 @@ export function UnitPanel({ m, result, scenario }: Props) {
       )}
       <AgentSection m={m} agentId={unit.agent ?? unit.id} />
       <MethadeskSection m={m} result={result} scenario={scenario} status={status} />
+    </>
+  );
+}
+
+/**
+ * Panel lateral de preview.html, ampliado con el agente de la unidad y sus datos de MethaDesk.
+ * Si lo seleccionado es una obra de proyecto (F5c), muestra la ficha del proyecto.
+ */
+export function UnitPanel({ m, result, scenario }: Props) {
+  const store = useCityStoreApi();
+  const selected = useCity((s) => s.selected);
+  const sites = useCity((s) => s.sites);
+  const site = sites.find((s) => s.id === selected);
+  const unit = unitById(CAMPUS_UNITS, selected) ?? CAMPUS_UNITS[0]!;
+  const statuses = result.ok ? result.snapshot.units : [];
+  const position = site ? `${m.site.short} ${pad2(sites.indexOf(site) + 1)} / ${pad2(sites.length)}` : `${unit.code} / ${pad2(CAMPUS_UNITS.length)}`;
+
+  return (
+    <>
+      <CockpitSummary m={m} />
+      <div className="aside-top">
+        {m.panel.explore} <b>{position}</b>
+      </div>
+      {site
+        ? <SiteDetails m={m} site={site} result={result} scenario={scenario} />
+        : <UnitDetails m={m} unit={unit} result={result} scenario={scenario} />}
       <FlowFeed m={m} />
       <h3 className="section-label">{m.panel.structure}</h3>
-      <StructureTree m={m} statuses={statuses} />
-      {bridge && (
-        <div className="bridge-card">
-          <div className="bridge-badge">↔ &nbsp; {m.panel.bridgeBadge}</div>
-          <p>{format(m.panel.bridgeText, { a: unitById(CAMPUS_UNITS, bridge.from)?.name ?? '', b: unitById(CAMPUS_UNITS, bridge.to)?.name ?? '' })}</p>
-        </div>
-      )}
-      <button type="button" className="focus-btn" onClick={() => store.getState().focus(unit.id)}>
-        {BUILDING_ICON}
-        {m.panel.focus}
+      <StructureTree m={m} statuses={statuses} projects={result.ok ? result.snapshot.projects : []} />
+      <button type="button" className="focus-btn" onClick={() => store.getState().focus(site?.id ?? unit.id)}>
+        {site ? SITE_ICON : BUILDING_ICON}
+        {site ? m.site.focus : m.panel.focus}
       </button>
       <p className="note">{m.panel.note}</p>
     </>

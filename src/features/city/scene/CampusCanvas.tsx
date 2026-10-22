@@ -14,7 +14,7 @@ export interface FlowProps {
   readonly tagLabel: (nr: number) => string;
 }
 import type { LabelRegistry } from '@/features/city/overlay/labelRegistry';
-import type { CityStore } from '@/features/city/state/cityStore';
+import { extentOf, type CityStore } from '@/features/city/state/cityStore';
 import type { HiringStore } from '@/os/hiringStore';
 import type { OsStore } from '@/os/osStore';
 import { useReducedMotion } from '@/lib/useReducedMotion';
@@ -48,14 +48,17 @@ function Diagnostics({ store }: Readonly<{ store: CityStore }>) {
         (scene.getObjectByName('pavilions')?.children ?? []).map((g) => ({ role: String(g.userData.role), pending: Boolean(g.userData.pending) })),
       getState: () => {
         const { selected, view, options, camera: pose } = store.getState();
-        return { selected, view, options, camera: pose };
+        return { selected, view, options, camera: pose, extent: extentOf(store.getState()) };
       },
-      /** Centro de un edificio en coordenadas de la ventana (para hacer clic en él). */
+      /** Centro de un edificio o de una obra en coordenadas de la ventana (para hacer clic en él). */
       unitScreenPosition: (id: string) => {
         const unit = CAMPUS_UNITS.find((u) => u.id === id);
-        if (!unit) return null;
+        const site = store.getState().sites.find((s) => s.id === id);
+        const target = unit ? new THREE.Vector3(unit.position.x, unit.size.h * 0.5, unit.position.z)
+          : site ? new THREE.Vector3(site.position.x, 0.5, site.position.z) : null;
+        if (!target) return null;
         const rect = gl.domElement.getBoundingClientRect();
-        const p = new THREE.Vector3(unit.position.x, unit.size.h * 0.5, unit.position.z).project(camera);
+        const p = target.project(camera);
         return { x: rect.left + ((p.x + 1) / 2) * rect.width, y: rect.top + ((1 - p.y) / 2) * rect.height };
       },
     };
@@ -78,6 +81,7 @@ interface SceneProps {
 
 function SceneContent({ store, osStore, hiringStore, flow, labels, onReady, reducedMotion }: SceneProps) {
   const day = useStore(store, (s) => s.options.day);
+  const extent = useStore(store, extentOf);
   const gl = useThree((s) => s.gl);
   const frames = useRef(0);
 
@@ -99,7 +103,7 @@ function SceneContent({ store, osStore, hiringStore, flow, labels, onReady, redu
   return (
     <>
       <LocalEnvironment />
-      <Lighting day={day} />
+      <Lighting day={day} extent={extent} />
       <CampusWorld store={store} osStore={osStore} hiringStore={hiringStore} flow={flow} reducedMotion={reducedMotion} />
       <CameraRig store={store} reducedMotion={reducedMotion} />
       <LabelProjector store={store} registry={labels} />

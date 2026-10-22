@@ -11,7 +11,7 @@ test('solicitar una contratación reserva un solar y crea una Freigabe pendiente
   const s = requestHire(EMPTY_HIRING, 'bim', T0);
   assert.equal(s.hires.length, 1);
   assert.deepEqual({ ...s.hires[0], lotId: undefined }, { roleId: 'bim', status: 'pending', requestedAt: T0.toISOString(), lotId: undefined });
-  assert.match(s.hires[0]!.lotId, /^p\d$/);
+  assert.match(s.hires[0]!.lotId, /^i\d$/);
   assert.equal(pendingApprovals(s).length, 1);
   assert.equal(pendingApprovals(s)[0]!.kind, 'hire');
   assert.deepEqual(activeHires(s), []);
@@ -46,10 +46,12 @@ test('no se contrata dos veces ni sin solar libre en el distrito (D14)', () => {
   let s = requestHire(EMPTY_HIRING, 'bim', T0);
   assert.equal(canHire(s, 'bim'), 'already');
   assert.throws(() => requestHire(s, 'bim', T0), /already/);
-  for (const role of ['kalkulation', 'terminplanung', 'recht']) s = requestHire(s, role, T0);
-  assert.equal(freeLot(s, 'project'), null);
+  for (const role of ['kalkulation', 'terminplanung', 'recht', 'controlling', 'personal', 'qualitaet']) s = requestHire(s, role, T0);
+  assert.equal(canHire(s, 'kundendienst'), 'ok', 'queda un solar');
+  s = requestHire(s, 'logistik', T0);
+  assert.equal(freeLot(s, 'industrial'), null);
+  assert.equal(freeLot(s, 'project'), null, 'las obras no tienen solares de pabellón');
   assert.equal(canHire(s, 'kundendienst'), 'no-lot');
-  assert.equal(canHire(s, 'personal'), 'ok', 'el otro distrito sigue libre');
   assert.equal(canHire(s, 'nope'), 'unknown');
   const lots = s.hires.map((h) => h.lotId);
   assert.equal(new Set(lots).size, lots.length, 'cada uno en su solar');

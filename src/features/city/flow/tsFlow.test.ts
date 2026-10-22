@@ -41,8 +41,20 @@ test('el ciclo de un TS: Plan fertig → reparto de AVOR → bereit → fertig a
     demo = releaseTs(demo, r.event!.nr, t); // su camión llega…
     t += REST_MS; // …y descansa
   }
-  assert.deepEqual(kinds, ['plan:projektleitung>avor', 'zuteilung:avor>schlosserei', 'bereit:schlosserei>avor', 'fertig:avor>bau']);
-  assert.deepEqual(demo.ts, [], 'al llegar a la obra sale de la simulación');
+  assert.deepEqual(kinds, ['plan:planer>avor', 'zuteilung:avor>schlosserei', 'bereit:schlosserei>avor', 'fertig:avor>werkhof']);
+  assert.deepEqual(demo.ts, [], 'sin obras sale por el Werkhof y deja la simulación');
+});
+
+test('con obras de proyecto, el TS terminado va de AVOR a una de ellas (sorteo propio)', () => {
+  const sites = ['projekt:a', 'projekt:b', 'projekt:c'];
+  const ready: FlowDemo = { next: 9, ts: [{ nr: 5, stage: 3, dept: 'blech', until: 0 }] };
+  // ¿TS nuevo? (0.9 = no) → cuál de los libres (0) → qué obra (0.5 → la segunda).
+  const r = demoTick(ready, 0, seq(0.9, 0, 0.5), sites);
+  assert.deepEqual(r.event, { nr: 5, from: 'avor', to: 'projekt:b', kind: 'fertig' });
+  assert.deepEqual(r.demo.ts, []);
+  const store = createFlowStore();
+  const viaStore = store.getState().next(0, seq(0.9, 0, 0, 0.99), sites);
+  assert.ok(viaStore, 'el store pasa las obras a la simulación');
 });
 
 test('un TS recién movido descansa; si todos descansan, entra uno nuevo con el siguiente número', () => {

@@ -5,11 +5,11 @@ const pavilions = (page: Page) => page.evaluate(() => window.__methacity?.pavili
 
 async function openDirectory(page: Page) {
   await page.goto('/agenten');
-  await expect(page.locator('[data-agent-card]')).toHaveCount(9);
+  await expect(page.locator('[data-agent-card]')).toHaveCount(13);
 }
 
 test.describe('F4 · Agenten', () => {
-  test('directorio: Chief, 8 unidades, filtros y catálogo de 14 especialistas', async ({ page }) => {
+  test('directorio: Chief, 6 edificios y 3 equipos de obra, filtros y catálogo de 14 especialistas', async ({ page }) => {
     await openDirectory(page);
     await expect(page.locator('[data-agent-card]').first()).toHaveAttribute('data-agent-card', 'chief');
     await expect(page.locator('[data-role]')).toHaveCount(14);
@@ -17,7 +17,7 @@ test.describe('F4 · Agenten', () => {
     await expect(page.locator('[data-agent-card]')).toHaveCount(0);
     await expect(page.getByText('Noch keine Spezialisten im Einsatz')).toBeVisible();
     await page.getByRole('button', { name: 'Einheiten', exact: true }).click();
-    await expect(page.locator('[data-agent-card]')).toHaveCount(9);
+    await expect(page.locator('[data-agent-card]')).toHaveCount(13);
   });
 
   test('contratar con Freigabe: el pabellón aparece en la ciudad y el agente trabaja; retirar lo quita', async ({ page }) => {
@@ -40,7 +40,7 @@ test.describe('F4 · Agenten', () => {
     await page.getByRole('button', { name: /Genehmigen: BIM-Koordination einstellen/ }).click();
     await page.locator('.module-rail').getByRole('link', { name: 'Agenten' }).click();
     await expect(page.locator('[data-agent-card="bim"]')).toBeVisible();
-    await expect(page.locator('[data-agent-card="bim"]')).toContainText('Für Projektleitung');
+    await expect(page.locator('[data-agent-card="bim"]')).toContainText('Für Planer');
 
     await openCity(page);
     await expect.poll(() => pavilions(page)).toEqual([{ role: 'bim', pending: false }]);
@@ -52,7 +52,7 @@ test.describe('F4 · Agenten', () => {
     await page.goto('/freigaben');
     await page.getByRole('button', { name: /Genehmigen: BIM-Koordination zurückziehen/ }).click();
     await page.goto('/agenten');
-    await expect(page.locator('[data-agent-card]')).toHaveCount(9);
+    await expect(page.locator('[data-agent-card]')).toHaveCount(13);
     await expect(page.locator('[data-agent-card="bim"]')).toHaveCount(0);
     await openCity(page);
     await expect.poll(() => pavilions(page)).toEqual([]);
@@ -60,11 +60,12 @@ test.describe('F4 · Agenten', () => {
 
   test('rechazar libera el solar; sin solar libre no se puede contratar', async ({ page }) => {
     await openDirectory(page);
-    for (const name of ['Kalkulation & Offerten', 'Terminplanung', 'BIM-Koordination', 'Recht & Verträge']) {
-      await page.getByRole('button', { name: `${name} anfordern` }).click();
-    }
+    // Los 8 solares del campus (las obras no tienen pabellones).
+    const names = ['Kalkulation & Offerten', 'Terminplanung', 'BIM-Koordination', 'Recht & Verträge', 'Controlling', 'Personal', 'Qualitätssicherung'];
+    for (const name of names) await page.getByRole('button', { name: `${name} anfordern` }).click();
+    await expect(page.getByRole('button', { name: 'Logistik-Disposition anfordern' })).toBeEnabled();
+    await page.getByRole('button', { name: 'Logistik-Disposition anfordern' }).click();
     await expect(page.locator('[data-role="kundendienst"]')).toContainText('Kein Bauplatz frei');
-    await expect(page.getByRole('button', { name: 'Personal anfordern' })).toBeEnabled();
     await page.goto('/freigaben');
     await page.getByRole('button', { name: /Ablehnen: Recht & Verträge einstellen/ }).click();
     await page.goto('/agenten');
@@ -72,9 +73,9 @@ test.describe('F4 · Agenten', () => {
   });
 
   test('perfil: responsabilidades, instrucciones guardadas tras recargar, historial y aviso si no existe', async ({ page }) => {
-    await page.goto('/agenten/bauleitung');
-    await expect(page.getByRole('heading', { level: 1, name: 'Bauleitung' })).toBeVisible();
-    await expect(page.locator('.bullet-list').first()).toContainText('Leitet die Baustellen');
+    await page.goto('/agenten/bl-dev-001');
+    await expect(page.getByRole('heading', { level: 1, name: 'Bauleitung DEV-001' })).toBeVisible();
+    await expect(page.locator('.bullet-list').first()).toContainText('Leitet die Baustelle des Projekts');
     const box = page.getByRole('textbox', { name: /Ständige Anweisungen/ });
     await box.fill('Immer zuerst die Abrufe prüfen.');
     await page.getByRole('button', { name: 'Speichern' }).click();
@@ -103,7 +104,7 @@ test.describe('F4 · Agenten', () => {
 
   test('con los 8 solares ocupados la ciudad sigue dentro del presupuesto de dibujo', async ({ page }) => {
     const at = '2026-10-22T08:00:00.000Z';
-    const roles = [['qualitaet', 'i1'], ['controlling', 'i2'], ['personal', 'i3'], ['lieferanten', 'i4'], ['kalkulation', 'p1'], ['terminplanung', 'p2'], ['bim', 'p3'], ['recht', 'p4']];
+    const roles = [['qualitaet', 'i1'], ['controlling', 'i2'], ['personal', 'i3'], ['lieferanten', 'i4'], ['kalkulation', 'i5'], ['terminplanung', 'i6'], ['bim', 'i7'], ['recht', 'i8']];
     const state = { hires: roles.map(([roleId, lotId]) => ({ roleId, lotId, status: 'active', requestedAt: at })), approvals: [] };
     await page.addInitScript((value) => window.localStorage.setItem('methacity.hiring.v1', value), JSON.stringify(state));
     await openCity(page);
@@ -117,9 +118,9 @@ test.describe('F4 · Agenten', () => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.addInitScript(() => {
-      window.localStorage.setItem('methacity.hiring.v1', JSON.stringify({ hires: [{ roleId: 'bim', lotId: 'i1', status: 'active', requestedAt: '2026-10-22T08:00:00.000Z' }], approvals: [] }));
+      window.localStorage.setItem('methacity.hiring.v1', JSON.stringify({ hires: [{ roleId: 'bim', lotId: 'p1', status: 'active', requestedAt: '2026-10-22T08:00:00.000Z' }], approvals: [] }));
       window.localStorage.setItem('methacity.chat.v1', '{kaputt');
-      window.localStorage.setItem('methacity.agents.v1', JSON.stringify({ instructions: { bau: 42 } }));
+      window.localStorage.setItem('methacity.agents.v1', JSON.stringify({ instructions: { werkhof: 42 } }));
     });
     await openDirectory(page);
     await expect(page.locator('[data-role="bim"] button')).toHaveText('Anfordern');

@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 import { useScenarioQuery } from '@/components/useScenarioQuery';
 import { useCityStoreApi } from '@/features/city/state/CityStoreProvider';
-import type { Messages } from '@/i18n';
+import { format, type Messages } from '@/i18n';
 import { relativeTimeDe } from '@/lib/relativeTime';
 import { profileOf } from '@/os/chat/profile';
-import { activityText, agentName, agentTaskText } from '@/os/format';
+import { activityText, agentName, agentTaskText, projectRole } from '@/os/format';
 import { useChat, useHiring, useSim } from '@/os/OsProvider';
 import type { SimAgent } from '@/os/simulation/engine';
-import { districtOf } from './directory';
+import { cityPlaceOf, districtOf } from './directory';
 import { InstructionsEditor } from './InstructionsEditor';
 
 const HISTORY_SIZE = 10;
@@ -19,6 +19,8 @@ const HISTORY_SIZE = 10;
 function roleLine(agent: SimAgent, m: Messages): string {
   if (agent.kind === 'orchestrator') return m.agents.chiefRole;
   if (agent.kind === 'specialist') return m.specialists[agent.id as keyof Messages['specialists']]?.description ?? '';
+  const project = projectRole(agent.id);
+  if (project) return format(m.labels.site, { nr: project.nr });
   return agent.unitId ? m.units[agent.unitId].role : '';
 }
 
@@ -46,9 +48,10 @@ export function AgentProfile({ m, agentId }: Readonly<{ m: Messages; agentId: st
   const name = agentName(agent.id, m);
   const district = districtOf(agent);
   const chats = conversations?.filter((c) => c.agentId === agent.id).length ?? 0;
+  const place = cityPlaceOf(agent);
   const showInCity = () => {
-    if (!agent.unitId) return;
-    city.getState().select(agent.unitId);
+    if (!place) return;
+    city.getState().select(place);
     city.getState().setView('city');
     router.push(`/${query}`);
   };
@@ -74,7 +77,7 @@ export function AgentProfile({ m, agentId }: Readonly<{ m: Messages; agentId: st
           </dl>
           <div className="row-actions">
             <Link className="ghost-btn small primary" href={`/chat?agent=${agent.id}`}>{m.profile.openChat}</Link>
-            {agent.unitId && <button type="button" className="ghost-btn small" onClick={showInCity}>{m.profile.showInCity}</button>}
+            {place && <button type="button" className="ghost-btn small" onClick={showInCity}>{m.profile.showInCity}</button>}
           </div>
         </section>
         <section className="card" aria-labelledby="resp-title">

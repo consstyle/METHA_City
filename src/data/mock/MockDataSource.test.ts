@@ -9,18 +9,19 @@ import {
 const NOW = () => new Date('2026-10-21T10:00:00Z');
 const TODAY = '2026-10-21';
 
-test('el escenario normal entrega un snapshot válido con las 8 unidades y los 3 proyectos', async () => {
+test('el escenario normal entrega un snapshot válido con las 6 unidades del campus y los 3 proyectos', async () => {
   const snap = await new MockDataSource({ scenario: 'normal', now: NOW }).getSnapshot();
   assert.doesNotThrow(() => CitySnapshotSchema.parse(snap));
   assert.equal(snap.source, 'mock');
-  assert.equal(snap.units.length, 8);
+  assert.equal(snap.units.length, 6);
   assert.deepEqual(snap.projects.map((p) => p.projektId), ['mock-DEV-001', 'mock-DEV-002', 'mock-DEV-003']);
   assert.equal(snap.dataAsOf, '2026-10-21T10:00:00.000Z');
 });
 
-test('el escenario normal suma los 48 Teilsysteme del seed sintético', async () => {
+test('el campus suma 28 Teilsysteme y los proyectos los 48 del seed (la obra no es del campus, F5c)', async () => {
   const snap = await new MockDataSource({ scenario: 'normal', now: NOW }).getSnapshot();
-  assert.equal(snap.units.reduce((s, u) => s + u.ts.total, 0), 48);
+  assert.equal(snap.units.reduce((s, u) => s + u.ts.total, 0), 28);
+  assert.equal(snap.projects.reduce((s, p) => s + p.tsTotal, 0), 48);
   assert.ok(snap.units.every((u) => u.hasData));
   assert.ok(snap.units.every((u) => u.agent.state === 'offline'));
 });
@@ -54,7 +55,7 @@ test('el escenario de alarmas tiene más alertas que el normal y agentes trabaja
   const alarme = await new MockDataSource({ scenario: 'alarme', now: NOW }).getSnapshot();
   const sum = (s: typeof normal) => s.units.reduce((n, u) => n + u.alerts.montageUeberfaellig + u.alerts.nachbearbeitung, 0);
   assert.ok(sum(alarme) > sum(normal));
-  assert.equal(alarme.units.reduce((s, u) => s + u.ts.total, 0), 48, 'mismo número de TS');
+  assert.equal(alarme.units.reduce((s, u) => s + u.ts.total, 0), 28, 'mismo número de TS');
   assert.ok(alarme.units.some((u) => u.agent.state === 'working'));
   assert.ok(alarme.units.some((u) => u.agent.pendingApprovals > 0));
 });

@@ -11,7 +11,7 @@ function silence(method: 'error' | 'warn') {
 test('loadSnapshot devuelve el snapshot cuando la fuente responde', async () => {
   const result = await loadSnapshot(new MockDataSource());
   assert.equal(result.ok, true);
-  assert.equal(result.ok && result.snapshot.units.length, 8);
+  assert.equal(result.ok && result.snapshot.units.length, 6);
 });
 
 test('loadSnapshot convierte un fallo en { ok: false } y registra el error completo', async () => {

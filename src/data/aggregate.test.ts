@@ -14,18 +14,19 @@ const row = (id: AbteilungKennzahlen['abteilung_id'], patch: Partial<AbteilungKe
 
 test('suma los departamentos de la unidad y de sus subunidades', () => {
   const rows = [
-    row('bau', { ts_gesamt: 4, ts_offen: 2, montage_ueberfaellig: 1, ts_nachbearbeitung: 1 }),
-    row('montage', { ts_gesamt: 3, ts_offen: 3, montage_ueberfaellig: 2 }),
-    row('subunternehmer', { ts_gesamt: 1, ts_express: 1 }),
+    row('einkauf', { ts_gesamt: 4, ts_offen: 2, montage_ueberfaellig: 1, ts_nachbearbeitung: 1 }),
+    row('unternehmer', { ts_gesamt: 4, ts_offen: 3, montage_ueberfaellig: 2, ts_express: 1 }),
     row('avor', { ts_gesamt: 99 }),
+    // Departamentos de obra (F5c): pertenecen a los proyectos, no a un edificio del campus.
+    row('bau', { ts_gesamt: 50 }),
   ];
-  const bau = aggregateUnits(CAMPUS_UNITS, rows).find((u) => u.unitId === 'bau');
-  assert.equal(bau?.ts.total, 8);
-  assert.equal(bau?.ts.offen, 5);
-  assert.equal(bau?.alerts.montageUeberfaellig, 3);
-  assert.equal(bau?.alerts.nachbearbeitung, 1);
-  assert.equal(bau?.alerts.express, 1);
-  assert.equal(bau?.hasData, true);
+  const einkauf = aggregateUnits(CAMPUS_UNITS, rows).find((u) => u.unitId === 'einkauf');
+  assert.equal(einkauf?.ts.total, 8);
+  assert.equal(einkauf?.ts.offen, 5);
+  assert.equal(einkauf?.alerts.montageUeberfaellig, 3);
+  assert.equal(einkauf?.alerts.nachbearbeitung, 1);
+  assert.equal(einkauf?.alerts.express, 1);
+  assert.equal(einkauf?.hasData, true);
 });
 
 test('cada columna de la vista llega a su campo (valores distintos por columna)', () => {
@@ -52,21 +53,20 @@ test('cada columna de la vista llega a su campo (valores distintos por columna)'
 });
 
 test('el desglose por departamento sigue el orden unidad → subunidades y marca los que no tienen datos', () => {
-  const rows = [row('bau', { ts_gesamt: 4 }), emptyRow('montage')];
-  const bau = aggregateUnits(CAMPUS_UNITS, rows).find((u) => u.unitId === 'bau');
+  const rows = [row('einkauf', { ts_gesamt: 4 }), emptyRow('unternehmer')];
+  const einkauf = aggregateUnits(CAMPUS_UNITS, rows).find((u) => u.unitId === 'einkauf');
   assert.deepEqual(
-    bau?.departments.map((d) => [d.abteilungId, d.present, d.tsTotal]),
+    einkauf?.departments.map((d) => [d.abteilungId, d.present, d.tsTotal]),
     [
-      ['bau', true, 4],
-      ['montage', false, 0],
-      ['subunternehmer', false, 0],
+      ['einkauf', true, 4],
+      ['unternehmer', false, 0],
     ],
   );
 });
 
 test('las 12 filas a cero que devuelve la vista sin datos dejan todas las unidades sin datos', () => {
   const units = aggregateUnits(CAMPUS_UNITS, ABTEILUNG_IDS.map(emptyRow));
-  assert.equal(units.length, 8);
+  assert.equal(units.length, CAMPUS_UNITS.length);
   assert.ok(units.every((u) => u.hasData === false && u.ts.total === 0));
 });
 
@@ -75,18 +75,17 @@ test('sin ninguna fila las unidades también quedan sin datos', () => {
 });
 
 test('una unidad tiene datos si al menos uno de sus departamentos los tiene', () => {
-  const rows = [emptyRow('bau'), row('montage', { gruppen_offen: 1 }), emptyRow('subunternehmer')];
-  assert.equal(aggregateUnits(CAMPUS_UNITS, rows).find((u) => u.unitId === 'bau')?.hasData, true);
+  const rows = [emptyRow('einkauf'), row('unternehmer', { gruppen_offen: 1 })];
+  assert.equal(aggregateUnits(CAMPUS_UNITS, rows).find((u) => u.unitId === 'einkauf')?.hasData, true);
 });
 
 test('el próximo montaje es la fecha más temprana de sus departamentos', () => {
   const rows = [
-    row('bau', { naechster_montagetermin: '2026-11-20' }),
-    row('montage', { naechster_montagetermin: '2026-11-03' }),
-    row('subunternehmer', { naechster_montagetermin: null }),
+    row('einkauf', { naechster_montagetermin: '2026-11-20' }),
+    row('unternehmer', { naechster_montagetermin: '2026-11-03' }),
   ];
-  const bau = aggregateUnits(CAMPUS_UNITS, rows).find((u) => u.unitId === 'bau');
-  assert.equal(bau?.naechsterMontagetermin, '2026-11-03');
+  const einkauf = aggregateUnits(CAMPUS_UNITS, rows).find((u) => u.unitId === 'einkauf');
+  assert.equal(einkauf?.naechsterMontagetermin, '2026-11-03');
 });
 
 test('los estados de agente se aplican por unidad y se copian, no se comparten', () => {
@@ -101,7 +100,7 @@ test('los estados de agente se aplican por unidad y se copian, no se comparten',
 });
 
 test('no muta las filas de entrada', () => {
-  const rows = Object.freeze([Object.freeze(row('bau', { ts_gesamt: 1 }))]);
+  const rows = Object.freeze([Object.freeze(row('einkauf', { ts_gesamt: 1 }))]);
   assert.doesNotThrow(() => aggregateUnits(CAMPUS_UNITS, rows));
 });
 

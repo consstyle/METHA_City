@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { CAMPUS_UNITS } from '@/features/city/model/campus';
 import { deriveRelations, labelAnchorHeight } from '@/features/city/model/hierarchy';
+import { layoutSites } from '@/features/city/model/projects';
 import { buildCampus } from './campus';
 import { applyDaylight, createMaterials } from './materials';
 
@@ -23,7 +24,7 @@ function meshes(root: THREE.Object3D): THREE.Mesh[] {
   return out;
 }
 
-test('cada una de las 8 unidades tiene geometría seleccionable con su id', () => {
+test('cada unidad del campus tiene geometría seleccionable con su id', () => {
   const campus = build();
   const ids = new Set(meshes(campus.pickables).map((m) => m.userData.id));
   assert.deepEqual([...ids].sort(), CAMPUS_UNITS.map((u) => u.id).sort());
@@ -32,20 +33,44 @@ test('cada una de las 8 unidades tiene geometría seleccionable con su id', () =
 
 test('hay un anillo de selección por unidad, todos ocultos al principio', () => {
   const campus = build();
-  assert.equal(campus.rings.size, 8);
+  assert.equal(campus.rings.size, CAMPUS_UNITS.length);
   assert.ok([...campus.rings.values()].every((r) => r.visible === false));
   campus.dispose();
 });
 
-test('las rutas son las 7 relaciones: 6 de dependencia con 2 puntos y 1 de coordinación con 4', () => {
+test('las rutas son las 5 dependencias de AVOR con 2 puntos; una coordinación lleva 4', () => {
   const campus = build();
   const { animations } = campus.routes;
-  assert.equal(animations.length, 7);
+  assert.equal(animations.length, 5);
+  assert.ok(animations.every((a) => a.relation.kind === 'hierarchy' && a.dots.length === 2));
+  campus.dispose();
+  const linked = buildCampus(CAMPUS_UNITS, deriveRelations(CAMPUS_UNITS, [{ from: 'einkauf', to: 'werkhof' }]));
   assert.deepEqual(
-    animations.map((a) => [a.relation.kind, a.dots.length]).filter(([k]) => k === 'coordination'),
-    [['coordination', 4]],
+    linked.routes.animations.filter((a) => a.relation.kind === 'coordination').map((a) => a.dots.length),
+    [4],
   );
-  assert.ok(animations.filter((a) => a.relation.kind === 'hierarchy').every((a) => a.dots.length === 2));
+  linked.dispose();
+});
+
+const SITES = layoutSites([
+  { projektId: 'a', projektnummer: 'DEV-001', projektname: 'A' },
+  { projektId: 'b', projektnummer: 'DEV-002', projektname: 'B' },
+  { projektId: 'c', projektnummer: 'DEV-003', projektname: 'C' },
+]);
+
+test('cada obra se puede seleccionar, tiene su anillo y su etiqueta, y va instanciada', () => {
+  const plain = buildCampus(CAMPUS_UNITS, deriveRelations(CAMPUS_UNITS), SITES.slice(0, 1));
+  const campus = buildCampus(CAMPUS_UNITS, deriveRelations(CAMPUS_UNITS), SITES);
+  const ids = new Set(meshes(campus.pickables).map((m) => m.userData.id));
+  for (const s of SITES) {
+    assert.ok(ids.has(s.id), `${s.id} seleccionable`);
+    assert.equal(campus.rings.get(s.id)?.visible, false);
+    assert.deepEqual([campus.labelAnchors.get(s.id)?.x, campus.labelAnchors.get(s.id)?.z], [s.building.x, s.building.z]);
+  }
+  // Cada obra más: un volumen invisible de selección y un anillo; todo lo demás va instanciado.
+  assert.equal(meshes(campus.root).length - meshes(plain.root).length, (SITES.length - 1) * 2);
+  assert.ok(meshes(plain.root).length - meshes(build().root).length <= 8, 'pocas mallas nuevas por tener obras');
+  plain.dispose();
   campus.dispose();
 });
 
@@ -71,7 +96,7 @@ test('los elementos repetidos están instanciados: pocas mallas para todo el cam
   const instanced = all.filter((m) => m instanceof THREE.InstancedMesh) as THREE.InstancedMesh[];
   const instances = instanced.reduce((s, m) => s + m.count, 0);
   assert.ok(all.length <= 160, `demasiadas mallas: ${all.length}`);
-  assert.ok(instances > 2_000, `se esperaban miles de instancias, hay ${instances}`);
+  assert.ok(instances > 1_500, `se esperaban miles de instancias, hay ${instances}`);
   campus.dispose();
 });
 

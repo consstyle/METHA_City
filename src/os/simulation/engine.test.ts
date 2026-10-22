@@ -40,14 +40,17 @@ test('con el tiempo hay trabajo, delegaciones, finalizaciones y peticiones de ap
   for (const t of ['started', 'delegated', 'completed', 'approval']) assert.ok(types.has(t as never), `falta ${t}`);
 });
 
-test('las delegaciones siguen la jerarquía de la ciudad o la coordinación AVOR ↔ Bauleitung', () => {
+test('las delegaciones siguen la jerarquía del campus y los enlaces de las obras', () => {
   const s = run(5, 300);
   for (const e of s.activity.filter((x) => x.type === 'delegated')) {
     assert.ok(delegationTargets(e.agentId, RELATIONS).includes(e.targetAgentId as string), `${e.agentId} → ${e.targetAgentId}`);
   }
-  assert.deepEqual(delegationTargets('chief', RELATIONS).sort(), ['avor', 'projektleitung']);
-  assert.deepEqual(delegationTargets('avor', RELATIONS).sort(), ['bauleitung', 'blech', 'einkauf', 'schlosserei', 'werkhof']);
-  assert.deepEqual(delegationTargets('bau', RELATIONS), []);
+  assert.deepEqual(delegationTargets('chief', RELATIONS), ['avor']);
+  assert.deepEqual(delegationTargets('avor', RELATIONS).sort(), ['blech', 'einkauf', 'planer', 'schlosserei', 'werkhof']);
+  assert.deepEqual(delegationTargets('werkhof', RELATIONS), []);
+  const links = [{ from: 'chief', to: 'pl-dev-001' }, { from: 'pl-dev-001', to: 'bl-dev-001' }, { from: 'avor', to: 'bl-dev-001' }];
+  assert.deepEqual(delegationTargets('chief', RELATIONS, links), ['avor', 'pl-dev-001'], 'el Chief delega en AVOR y en cada Projektleitung');
+  assert.ok(delegationTargets('avor', RELATIONS, links).includes('bl-dev-001'));
 });
 
 test('el registro se limita y los recuentos cuadran con los estados', () => {
@@ -85,6 +88,6 @@ test('activeDelegations devuelve solo las delegaciones recientes entre unidades'
 test('toSnapshot entrega un estado válido según el contrato, con fechas ISO', () => {
   const snap = toSnapshot(run(6, 60));
   assert.doesNotThrow(() => OsSnapshotSchema.parse(snap));
-  assert.equal(snap.agents.length, 9);
+  assert.equal(snap.agents.length, 7);
   assert.equal(snap.source, 'simulation');
 });

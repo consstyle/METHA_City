@@ -1,4 +1,5 @@
 import { CAMPUS_UNITS } from '@/features/city/model/campus';
+import { projectSiteId } from '@/features/city/model/projects';
 import { PAVILION_LOTS } from '@/features/city/model/specialists';
 import type { DistrictId } from '@/features/city/model/types';
 import type { HiringState } from '@/os/hiring';
@@ -9,16 +10,25 @@ import type { SimAgent } from '@/os/simulation/engine';
 export const AGENT_FILTERS = ['all', 'units', 'specialists'] as const;
 export type AgentFilter = (typeof AGENT_FILTERS)[number];
 
-const KIND_ORDER: Record<SimAgent['kind'], number> = { orchestrator: 0, unit: 1, specialist: 2 };
+const KIND_ORDER: Record<SimAgent['kind'], number> = { orchestrator: 0, unit: 1, project: 2, specialist: 3 };
 
+/** «Einheiten» incluye el Chief, los edificios del campus y los equipos de proyecto. */
 export function filterAgents(agents: readonly SimAgent[], filter: AgentFilter): SimAgent[] {
   const keep = (a: SimAgent) =>
     filter === 'all' || (filter === 'units' ? a.kind !== 'specialist' : a.kind === 'specialist');
   return agents.filter(keep).sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind]);
 }
 
-export function districtOf(agent: Pick<SimAgent, 'unitId'>): DistrictId | null {
+/** Distrito del agente: el de su edificio, o «Baustellen» para los equipos de proyecto (F5c). */
+export function districtOf(agent: Pick<SimAgent, 'unitId'> & Partial<Pick<SimAgent, 'kind'>>): DistrictId | null {
+  if (agent.kind === 'project') return 'project';
   return CAMPUS_UNITS.find((u) => u.id === agent.unitId)?.district ?? null;
+}
+
+/** Dónde se ve el agente en la ciudad: su edificio o la obra de su proyecto (null si no tiene sitio). */
+export function cityPlaceOf(agent: Pick<SimAgent, 'unitId' | 'kind' | 'projectId'>): string | null {
+  if (agent.unitId) return agent.unitId;
+  return agent.kind === 'project' && agent.projectId ? projectSiteId(agent.projectId) : null;
 }
 
 export function freeLots(hiring: HiringState): Record<DistrictId, number> {

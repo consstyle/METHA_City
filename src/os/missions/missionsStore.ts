@@ -6,7 +6,7 @@ import { uniqueSuffix } from '@/lib/ids';
 import type { ExternalEvent } from '../simulation/engine';
 import { MissionInputSchema, MissionSchema, type Mission, type MissionContext } from './contract';
 import { advance, cancelMission, createMission, decidePlan, decideResult, isFinished } from './mission';
-import { planSteps } from './planner';
+import { planSteps, type PlannerProject } from './planner';
 
 export const MISSION_LIMIT = 20;
 
@@ -23,7 +23,8 @@ export type CreateResult = { readonly ok: true; readonly id: string } | { readon
 export interface MissionsState {
   readonly missions: readonly Mission[];
   /** Crea la misión (valida la entrada con zod). Con demasiadas misiones abiertas no se crea. */
-  create(input: unknown, context: MissionContext | null, activeSpecialists: readonly string[]): CreateResult;
+  /** `projects`: equipos de los proyectos activos (el plan reparte el trabajo de obra entre ellos). */
+  create(input: unknown, context: MissionContext | null, activeSpecialists: readonly string[], projects?: readonly PlannerProject[]): CreateResult;
   decide(missionId: string, kind: 'plan' | 'result', approve: boolean): boolean;
   cancel(missionId: string): boolean;
   /** Avanza todas las misiones hasta ahora y devuelve los eventos para la actividad. */
@@ -74,14 +75,14 @@ export function createMissionsStore({ m, now = () => new Date(), getStore, onEve
     };
     return {
       missions: storage.load()?.missions ?? [],
-      create: (raw, context, activeSpecialists) => {
+      create: (raw, context, activeSpecialists, projects = []) => {
         const input = MissionInputSchema.safeParse(raw);
         if (!input.success) return { ok: false, reason: 'invalid' };
         const missions = latest();
         if (missions.filter((x) => !isFinished(x)).length >= MISSION_LIMIT) return { ok: false, reason: 'limit' };
         const at = now();
         const id = `m-${at.getTime().toString(36)}-${uniqueSuffix()}`;
-        const mission = createMission(id, input.data, at, planSteps(input.data.objective, activeSpecialists, m), context);
+        const mission = createMission(id, input.data, at, planSteps(input.data.objective, activeSpecialists, m, projects), context);
         commit([mission, ...missions]);
         const plan = mission.steps[0];
         if (plan) onEvents?.([{ type: 'started', agentId: plan.agentId, targetAgentId: null, note: plan.text, at: mission.createdAt }]);

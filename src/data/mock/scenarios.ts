@@ -112,9 +112,8 @@ export function agentStates(scenario: MockScenario): Partial<Record<UnitId, Agen
   if (scenario !== 'alarme') return {};
   return {
     avor: { state: 'working', pendingApprovals: 2 },
-    bauleitung: { state: 'working', pendingApprovals: 1 },
+    planer: { state: 'working', pendingApprovals: 1 },
     einkauf: { state: 'idle', pendingApprovals: 0 },
     schlosserei: { state: 'working', pendingApprovals: 0 },
-    projektleitung: { state: 'idle', pendingApprovals: 1 },
   };
 }

@@ -3,6 +3,7 @@
 import type { SnapshotResult } from '@/data/load';
 import type { MockScenario } from '@/data/mock/scenarios';
 import { UnitPanel } from '@/features/city/panel/UnitPanel';
+import { ProjectsSync } from '@/features/projects/ProjectsSync';
 import type { Messages } from '@/i18n';
 import { CityStage } from './CityStage';
 
@@ -16,6 +17,7 @@ interface Props {
 export function CityExperience({ m, result, scenario }: Props) {
   return (
     <main className="app-main">
+      <ProjectsSync result={result} />
       <CityStage m={m} />
       <aside id="estructura" className="aside">
         <UnitPanel m={m} result={result} scenario={scenario} />

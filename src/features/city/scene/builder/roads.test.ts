@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { CAMPUS_UNITS } from '@/features/city/model/campus';
 import type { UnitId } from '@/features/city/model/types';
 import { FLOW_PAIRS } from '@/features/city/flow/tsFlow';
-import { buildRoadGraph, despike, LANE_OFFSET, routeBetween } from './roads';
+import { layoutSites, SITE_PLATFORM } from '@/features/city/model/projects';
+import { buildRoadGraph, despike, LANE_OFFSET, routeBetween, routeToSite } from './roads';
 
 const unit = (id: UnitId) => CAMPUS_UNITS.find((u) => u.id === id)!;
 const inside = (x: number, z: number, id: UnitId, margin = 0) => {
@@ -82,6 +83,35 @@ test('despike quita las medias vueltas y deja intactas las curvas normales', () 
 });
 
 test('las rutas se reutilizan (caché) y una unidad consigo misma no tiene ruta', () => {
-  assert.equal(routeBetween(unit('avor'), unit('bau')), routeBetween(unit('avor'), unit('bau')));
+  assert.equal(routeBetween(unit('avor'), unit('werkhof')), routeBetween(unit('avor'), unit('werkhof')));
   assert.equal(routeBetween(unit('avor'), unit('avor')), null);
+});
+
+const SITES = layoutSites([
+  { projektId: 'a', projektnummer: 'DEV-001', projektname: 'A' },
+  { projektId: 'b', projektnummer: 'DEV-002', projektname: 'B' },
+  { projektId: 'c', projektnummer: 'DEV-003', projektname: 'C' },
+  { projektId: 'd', projektnummer: 'DEV-004', projektname: 'D' },
+]);
+
+test('hay ruta de AVOR a cada obra: por las calles y la carretera de la obra hasta su plataforma', () => {
+  for (const site of SITES) {
+    const path = routeToSite(unit('avor'), site);
+    assert.ok(path && path.length >= 4, site.id);
+    const [x0, z0] = path[0]!;
+    assert.ok(inside(x0, z0, 'avor', 1.6), 'sale de AVOR');
+    const [x1, z1] = path.at(-1)!;
+    const out = Math.hypot(x1 - site.position.x, z1 - site.position.z);
+    assert.ok(out < SITE_PLATFORM.d / 2, `${site.id}: termina dentro de la plataforma (${out.toFixed(2)})`);
+    for (let i = 1; i < path.length; i++) {
+      const [ax, az] = path[i - 1]!;
+      const [bx, bz] = path[i]!;
+      for (let s = 0; s <= 10; s++) {
+        const [x, z] = [ax + ((bx - ax) * s) / 10, az + ((bz - az) * s) / 10];
+        for (const other of CAMPUS_UNITS) if (other.id !== 'avor') assert.ok(!inside(x, z, other.id, 0.2), `${site.id} pasa por ${other.id}`);
+      }
+    }
+  }
+  const site = SITES[0]!;
+  assert.equal(routeToSite(unit('avor'), site), routeToSite(unit('avor'), site), 'caché');
 });

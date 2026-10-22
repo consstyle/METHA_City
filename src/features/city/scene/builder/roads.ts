@@ -36,6 +36,21 @@ function insideAnyBuilding([x, z]: Point2, margin: number): boolean {
   return CAMPUS_UNITS.some((u) => Math.abs(x - u.position.x) < u.size.w / 2 + margin && Math.abs(z - u.position.z) < u.size.d / 2 + margin);
 }
 
+/**
+ * Recargo de los tramos pegados a una fachada (margen) o que la pisan (el anillo vial de
+ * preview.html corta la esquina de Einkauf): los camiones los evitan si hay otro camino.
+ */
+const SQUEEZE_MARGIN = 0.45;
+const SQUEEZE_COST = 3;
+const CLIP_MARGIN = 0.3;
+const CLIP_COST = 12;
+
+function squeezeCost(a: Point2, b: Point2): number {
+  const points: Point2[] = [a, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], b];
+  if (points.some((p) => insideAnyBuilding(p, CLIP_MARGIN))) return CLIP_COST;
+  return points.some((p) => insideAnyBuilding(p, SQUEEZE_MARGIN)) ? SQUEEZE_COST : 1;
+}
+
 let cachedGraph: RoadGraph | null = null;
 
 export function buildRoadGraph(): RoadGraph {
@@ -47,7 +62,7 @@ export function buildRoadGraph(): RoadGraph {
   const nodes: Point2[] = [];
   const adjacency: [number, number][][] = [];
   const link = (a: number, b: number) => {
-    const l = dist(nodes[a]!, nodes[b]!);
+    const l = dist(nodes[a]!, nodes[b]!) * squeezeCost(nodes[a]!, nodes[b]!);
     adjacency[a]!.push([b, l]);
     adjacency[b]!.push([a, l]);
   };
@@ -219,6 +234,45 @@ export function despike(points: readonly Point2[]): Point2[] {
 }
 
 const routeCache = new Map<string, Point2[] | null>();
+const ROUTE_CACHE_MAX = 256;
+
+/** Cada recolocación de obras crea claves nuevas: la caché no crece sin límite. */
+function remember(key: string, route: Point2[] | null): void {
+  if (routeCache.size >= ROUTE_CACHE_MAX) routeCache.clear();
+  routeCache.set(key, route);
+}
+
+/** Lo que necesita una ruta hacia una obra de proyecto (ver model/projects.ts). */
+export interface SiteDestination {
+  readonly id: string;
+  readonly position: { readonly x: number; readonly z: number };
+  /** Del anillo vial al borde de la plataforma. */
+  readonly road: readonly [{ readonly x: number; readonly z: number }, { readonly x: number; readonly z: number }];
+}
+
+/** Dentro de la plataforma, el camión se detiene a esta fracción entre el borde y el centro. */
+const SITE_STOP = 0.4;
+
+/**
+ * Ruta de un edificio a una obra: por las calles hasta el punto del anillo de donde sale la
+ * carretera de la obra, y por ella hasta la plataforma (entre las oficinas de obra).
+ */
+export function routeToSite(from: UnitDef, site: SiteDestination): Point2[] | null {
+  const [ring, front] = site.road;
+  const key = `${from.id}>${site.id}@${ring.x.toFixed(2)},${ring.z.toFixed(2)}`;
+  if (routeCache.has(key)) return routeCache.get(key)!;
+  const graph = buildRoadGraph();
+  const a = gateNode(graph, from);
+  const entry: Point2 = [ring.x, ring.z];
+  const b = graph.nodes.reduce((best, p, i) => (dist(p, entry) < dist(graph.nodes[best]!, entry) ? i : best), 0);
+  const ids = a >= 0 ? shortest(graph, a, b) : null;
+  const stop: Point2 = [front.x + (site.position.x - front.x) * SITE_STOP, front.z + (site.position.z - front.z) * SITE_STOP];
+  const route = ids
+    ? despike(lanePath(despike([door(from, graph.nodes[a]!), ...ids.map((i) => graph.nodes[i]!), entry, [front.x, front.z], stop]), LANE_OFFSET))
+    : null;
+  remember(key, route);
+  return route;
+}
 
 /** Ruta de puerta a puerta entre dos edificios (null si no hay o si es el mismo). */
 export function routeBetween(from: UnitDef, to: UnitDef): Point2[] | null {
@@ -233,6 +287,6 @@ export function routeBetween(from: UnitDef, to: UnitDef): Point2[] | null {
     // Dos pasadas: la ruta en bruto y, después del carril, las esquinas cerradas que el desplazamiento invierte.
     ? despike(lanePath(despike([door(from, graph.nodes[a]!), ...ids.map((i) => graph.nodes[i]!), door(to, graph.nodes[b]!)]), LANE_OFFSET))
     : null;
-  routeCache.set(key, route);
+  remember(key, route);
   return route;
 }

@@ -7,8 +7,8 @@ import { pavilionLayout } from './pavilion';
 const unit = (id: string) => CAMPUS_UNITS.find((u) => u.id === id)!;
 
 test('el pabellón mira a su unidad y el camino va hacia ella sin meterse en el edificio', () => {
-  const lot = PAVILION_LOTS.find((l) => l.id === 'p1')!;
-  const target = unit('projektleitung');
+  const lot = PAVILION_LOTS.find((l) => l.id === 'i5')!;
+  const target = unit('planer');
   const layout = pavilionLayout(lot, target);
   const link = layout.parts.find((p) => p.key === 'link')!;
   const facing = Math.atan2(target.position.x - lot.x, target.position.z - lot.z);

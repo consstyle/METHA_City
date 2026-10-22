@@ -12,7 +12,11 @@ const T0 = new Date('2026-10-22T08:00:00Z');
 const after = (ms: number) => new Date(T0.getTime() + ms);
 const INPUT = { objective: 'Überfällige Montagen reduzieren', expected: 'Liste mit Massnahmen', length: 'ausfuehrlich' as const };
 const CONTEXT = { hasData: true, open: 12, total: 40, overdue: 3, rework: 2 };
-const fresh = () => createMission('m1', INPUT, T0, planSteps(INPUT.objective, [], m), CONTEXT);
+const PROJECTS = [
+  { projektnummer: 'DEV-001', projektname: 'GAZ Ausbildungszentrum, Beringen', agents: { pl: 'pl-dev-001', bl: 'bl-dev-001' } },
+  { projektnummer: 'DEV-002', projektname: 'Innloc AG, Rothenburg', agents: { pl: 'pl-dev-002', bl: 'bl-dev-002' } },
+];
+const fresh = () => createMission('m1', INPUT, T0, planSteps(INPUT.objective, [], m, PROJECTS), CONTEXT);
 
 test('al crearla el Chief planifica; tras el tiempo de planificación el plan espera Freigabe', () => {
   const created = fresh();
@@ -30,9 +34,9 @@ test('plan aprobado: los pasos se ejecutan uno tras otro y encienden la delegaci
   const ready = advance(fresh(), after(PLANNING_MS), m).mission;
   const approved = decidePlan(ready, true, after(PLANNING_MS + 1000));
   assert.equal(approved.mission.status, 'running');
-  // Se delega por la jerarquía: Projektleitung → Bauleitung enciende esa ruta de la ciudad.
-  assert.deepEqual(approved.events.map((e) => [e.type, e.agentId, e.targetAgentId]), [['delegated', 'projektleitung', 'bauleitung']]);
-  assert.deepEqual(pinsOf([approved.mission]), { bauleitung: approved.mission.steps[1]!.text });
+  // En cada obra la Projektleitung pasa el trabajo a su Bauleitung.
+  assert.deepEqual(approved.events.map((e) => [e.type, e.agentId, e.targetAgentId]), [['delegated', 'pl-dev-001', 'bl-dev-001']]);
+  assert.deepEqual(pinsOf([approved.mission]), { 'bl-dev-001': approved.mission.steps[1]!.text });
 
   const t1 = PLANNING_MS + 1000 + STEP_MS;
   const second = advance(approved.mission, after(t1), m);
@@ -101,12 +105,18 @@ test('las revisiones tienen un límite y canRevise lo dice antes de pulsar', () 
 });
 
 test('las cabeceras y los especialistas reciben el trabajo del Chief o de su unidad', () => {
-  const steps = planSteps('Vertrag für das Projekt prüfen', ['recht'], m);
-  const ready = advance(createMission('m3', { ...INPUT, objective: 'Vertrag für das Projekt prüfen' }, T0, steps, null), after(PLANNING_MS), m).mission;
+  const steps = planSteps('Vertrag für die Lieferanten prüfen', ['recht'], m, PROJECTS);
+  const ready = advance(createMission('m3', { ...INPUT, objective: 'Vertrag für die Lieferanten prüfen' }, T0, steps, null), after(PLANNING_MS), m).mission;
   const run = decidePlan(ready, true, after(PLANNING_MS));
-  assert.deepEqual(run.events.map((e) => [e.agentId, e.targetAgentId]), [['chief', 'projektleitung']]);
-  const next = advance(run.mission, after(PLANNING_MS + STEP_MS), m);
-  assert.deepEqual(next.events.at(-1) && [next.events.at(-1)!.agentId, next.events.at(-1)!.targetAgentId], ['projektleitung', 'recht']);
+  assert.deepEqual(run.events.map((e) => [e.agentId, e.targetAgentId]), [['avor', 'einkauf']], 'Einkauf recibe de AVOR');
+  const last = advance(run.mission, after(PLANNING_MS + 2 * STEP_MS), m).events.filter((e) => e.type === 'delegated').at(-1);
+  assert.deepEqual(last && [last.agentId, last.targetAgentId], ['einkauf', 'recht'], 'el especialista recibe el trabajo de su unidad');
+  const report = planSteps('Projektbericht erstellen', [], m, PROJECTS);
+  const pl = decidePlan(advance(createMission('m4', INPUT, T0, report, null), after(PLANNING_MS), m).mission, true, after(PLANNING_MS));
+  assert.deepEqual(pl.events.map((e) => [e.agentId, e.targetAgentId]), [['chief', 'pl-dev-001']], 'la Projektleitung recibe del Chief');
+  const general = planSteps('Etwas ganz anderes', [], m, PROJECTS);
+  const head = decidePlan(advance(createMission('m5', INPUT, T0, general, null), after(PLANNING_MS), m).mission, true, after(PLANNING_MS));
+  assert.deepEqual(head.events.map((e) => [e.agentId, e.targetAgentId]), [['chief', 'avor']], 'la cabecera recibe del Chief');
 });
 
 test('si el reloj retrocede, la misión no se congela', () => {

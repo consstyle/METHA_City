@@ -3,10 +3,9 @@
 import { useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { CAMPUS_UNITS } from '@/features/city/model/campus';
-import { labelAnchorHeight } from '@/features/city/model/hierarchy';
 import { layoutLabels, type LabelInput } from '@/features/city/overlay/labelLayout';
 import { COMPACT_LABELS, type LabelRegistry } from '@/features/city/overlay/labelRegistry';
+import { labelTargets } from '@/features/city/overlay/labelTargets';
 import type { CityStore } from '@/features/city/state/cityStore';
 
 const STROKE_SELECTED = '#f26a2188';
@@ -14,18 +13,20 @@ const STROKE = '#95a3ad55';
 /** Aunque la cámara no se mueva, se recoloca de vez en cuando (p. ej. si cambia el tamaño de una etiqueta). */
 const REFRESH_FRAMES = 30;
 
-/** Firma de lo que determina la colocación: cámara, tamaño del lienzo y selección. */
+/** Firma de lo que determina la colocación: cámara, tamaño del lienzo, selección y obras. */
 function useChangeDetector() {
-  const last = useRef({ matrix: new Float32Array(16), width: -1, height: -1, selected: '' as string | null, frames: 0 });
-  return (m: THREE.Matrix4, width: number, height: number, selected: string | null) => {
+  const last = useRef({ matrix: new Float32Array(16), width: -1, height: -1, selected: '' as string | null, sites: null as unknown, frames: 0 });
+  return (m: THREE.Matrix4, width: number, height: number, selected: string | null, sites: unknown) => {
     const s = last.current;
     s.frames += 1;
-    const same = s.width === width && s.height === height && s.selected === selected && m.elements.every((e, i) => e === s.matrix[i]);
+    const same = s.width === width && s.height === height && s.selected === selected && s.sites === sites
+      && m.elements.every((e, i) => e === s.matrix[i]);
     if (same && s.frames < REFRESH_FRAMES) return false;
     s.matrix.set(m.elements);
     s.width = width;
     s.height = height;
     s.selected = selected;
+    s.sites = sites;
     s.frames = 0;
     return true;
   };
@@ -40,21 +41,21 @@ export function LabelProjector({ store, registry }: Readonly<{ store: CityStore;
   const changed = useChangeDetector();
 
   useFrame(() => {
-    const { selected, options, view } = store.getState();
+    const { selected, options, view, sites } = store.getState();
     if (!options.tags || view !== 'city') return;
     viewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-    if (!changed(viewProjection, size.width, size.height, selected)) return;
+    if (!changed(viewProjection, size.width, size.height, selected, sites)) return;
 
-    const inputs: LabelInput[] = CAMPUS_UNITS.map((u) => {
-      v.set(u.position.x, labelAnchorHeight(u), u.position.z).project(camera);
-      const el = registry.labels.get(u.id);
+    const inputs: LabelInput[] = labelTargets(sites).map((t) => {
+      v.set(...t.anchor).project(camera);
+      const el = registry.labels.get(t.id);
       return {
-        id: u.id,
+        id: t.id,
         anchorX: (v.x * 0.5 + 0.5) * size.width,
         anchorY: (-v.y * 0.5 + 0.5) * size.height,
         w: el?.offsetWidth || 130,
         h: el?.offsetHeight || 39,
-        priority: u.size.h,
+        priority: t.priority,
         onScreen: v.z > -1 && v.z < 1,
       };
     });

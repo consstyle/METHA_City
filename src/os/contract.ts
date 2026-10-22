@@ -15,7 +15,7 @@ export type AgentStateKind = z.infer<typeof AgentStateKindSchema>;
 
 export const OsAgentSchema = z.object({
   id: z.string().min(1),
-  kind: z.enum(['orchestrator', 'unit', 'specialist']),
+  kind: z.enum(['orchestrator', 'unit', 'specialist', 'project']),
   unitId: z.enum(UNIT_IDS).nullable(),
   state: AgentStateKindSchema,
   /** Índice de la tarea en el catálogo de textos del agente (i18n `sim.tasks`). */

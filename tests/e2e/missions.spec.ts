@@ -21,8 +21,9 @@ test.describe('F5 · Missionen (hito MVP)', () => {
     await startMission(page);
     await expect(chip(page)).toHaveText('Wird geplant');
     await expect(chip(page)).toHaveText('Plan wartet auf Freigabe', { timeout: 15_000 });
+    // Montajes sin nombrar proyecto: trabajan las Bauleitungen de las 2 primeras obras.
     await expect(page.locator('.step')).toHaveCount(4);
-    await expect(page.locator('.step').nth(1)).toContainText('Bauleitung');
+    await expect(page.locator('.step').nth(1)).toContainText('Bauleitung DEV-001');
 
     // La Freigabe del plan aparece en el módulo Freigaben y se decide allí
     await page.locator('.module-rail').getByRole('link', { name: 'Freigaben' }).click();

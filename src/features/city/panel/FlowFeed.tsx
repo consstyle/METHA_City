@@ -5,13 +5,19 @@ import { KIND_COLORS } from '@/features/city/flow/tsFlow';
 import { useCity, useFlow } from '@/features/city/state/CityStoreProvider';
 import { format, type Messages } from '@/i18n';
 
-const nameOf = (id: string) => CAMPUS_UNITS.find((u) => u.id === id)?.name ?? id;
 const css = (color: number) => `#${color.toString(16).padStart(6, '0')}`;
 
 /** «TS in Bewegung» (preview.html): los últimos Teilsysteme que han salido por las calles. */
 export function FlowFeed({ m }: Readonly<{ m: Messages }>) {
   const feed = useFlow((s) => s.feed);
   const on = useCity((s) => s.options.flow);
+  const sites = useCity((s) => s.sites);
+  // Edificio del campus o obra («Baustelle DEV-001»).
+  const nameOf = (id: string) => {
+    const site = sites.find((s) => s.id === id);
+    if (site) return format(m.flow.site, { nr: site.projektnummer });
+    return CAMPUS_UNITS.find((u) => u.id === id)?.name ?? id;
+  };
   return (
     <section className="panel-section" aria-labelledby="flow-title">
       <h3 id="flow-title" className="section-label">

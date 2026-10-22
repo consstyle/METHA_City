@@ -18,7 +18,7 @@ test.describe('F2 · escena 3D', () => {
   test('un clic en un edificio lo selecciona en la escena y en el panel', async ({ page }) => {
     await openCity(page);
     expect((await cityState(page)).selected).toBe('avor');
-    for (const id of ['bau', 'werkhof', 'schlosserei']) {
+    for (const id of ['planer', 'werkhof', 'schlosserei']) {
       const p = await screenPositionOf(page, id);
       await page.mouse.click(p.x, p.y);
       await expect.poll(async () => (await cityState(page)).selected).toBe(id);
@@ -26,9 +26,25 @@ test.describe('F2 · escena 3D', () => {
     }
   });
 
+  test('F5c · cada proyecto es una obra fuera de la isla: clic, ficha con su equipo y enfoque', async ({ page }) => {
+    await openCity(page);
+    await expect(page.locator('.label.site')).toHaveCount(3);
+    const id = 'projekt:mock-DEV-002';
+    const p = await screenPositionOf(page, id);
+    await page.mouse.click(p.x, p.y);
+    await expect.poll(async () => (await cityState(page)).selected).toBe(id);
+    const aside = page.locator('#estructura');
+    await expect(aside.getByRole('heading', { level: 2 })).toHaveText('Innloc AG, Rothenburg');
+    await expect(aside.getByText('PROJEKTLEITUNG', { exact: false }).first()).toBeVisible();
+    await expect(aside.locator(`[data-site="${id}"]`)).toHaveAttribute('aria-pressed', 'true');
+    await expect(aside.locator('a[href="/chat?agent=bl-dev-002"]')).toBeVisible();
+    await aside.getByRole('button', { name: 'Diese Baustelle aus der Nähe ansehen' }).click();
+    await expect.poll(async () => (await cityState(page)).camera.focus).toBe(id);
+  });
+
   test('arrastrar gira la cámara y no cambia la selección', async ({ page }) => {
     await openCity(page);
-    const p = await screenPositionOf(page, 'bau');
+    const p = await screenPositionOf(page, 'planer');
     const before = await cityState(page);
     await page.mouse.move(p.x, p.y);
     await page.mouse.down();
@@ -85,9 +101,11 @@ test.describe('F2 · escena 3D', () => {
     await openCity(page);
     await page.locator('[data-unit="werkhof"]').click();
     await page.getByRole('button', { name: 'Dieses Gebäude aus der Nähe ansehen' }).click();
-    const { camera } = await cityState(page);
+    const { camera, extent } = await cityState(page);
     expect(camera.focus).toBe('werkhof');
-    expect(camera.zoom).toBeCloseTo(1.85, 5);
+    // El encuadre base crece con las obras (extent): el enfoque lo compensa para acercarse igual.
+    expect(extent).toBeGreaterThan(1);
+    expect(camera.zoom).toBeCloseTo(1.85 * extent, 5);
   });
 
   test('capturas para comparar con preview.html', async ({ page }, info) => {

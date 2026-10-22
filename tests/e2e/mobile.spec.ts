@@ -9,9 +9,9 @@ test('en el móvil la escena, los controles y el panel siguen disponibles', asyn
   await expect(page.locator('.module-rail').getByRole('link', { name: 'Leitstand' })).toBeVisible();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   expect(overflow, 'sin desplazamiento horizontal').toBe(false);
-  await page.locator('[data-unit="bau"]').scrollIntoViewIfNeeded();
-  await page.locator('[data-unit="bau"]').click();
-  expect((await cityState(page)).selected).toBe('bau');
+  await page.locator('[data-unit="planer"]').scrollIntoViewIfNeeded();
+  await page.locator('[data-unit="planer"]').click();
+  expect((await cityState(page)).selected).toBe('planer');
   await page.screenshot({ path: info.outputPath('methacity-mobile.png'), fullPage: true });
 });
 
@@ -28,7 +28,7 @@ for (const path of ['/agenten', '/chat', '/missionen', '/freigaben', '/aufgaben'
 
 test('en el móvil el Leitstand cabe en la pantalla', async ({ page }, info) => {
   await page.goto('/leitstand');
-  await expect(page.locator('[data-agent]')).toHaveCount(9);
+  await expect(page.locator('[data-agent]')).toHaveCount(13);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   expect(overflow, 'sin desplazamiento horizontal').toBe(false);
   await page.screenshot({ path: info.outputPath('leitstand-mobile.png'), fullPage: true });

@@ -27,7 +27,7 @@ test('el tipo distingue orquestador, unidad y especialista', () => {
   assert.equal(profileOf('blech', m).kind, 'unit');
   const bim = profileOf('bim', m);
   assert.equal(bim.kind, 'specialist');
-  assert.equal(bim.responsibilities[1], 'Arbeitet im Auftrag von Projektleitung');
+  assert.equal(bim.responsibilities[1], 'Arbeitet im Auftrag von Planer');
 });
 
 test('los nombres de archivo no llevan espacios ni barras', () => {

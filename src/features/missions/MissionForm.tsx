@@ -6,7 +6,7 @@ import type { SnapshotResult } from '@/data/load';
 import type { Messages } from '@/i18n';
 import { EXPECTED_MAX, OBJECTIVE_MAX, REPORT_LENGTHS, type MissionInput } from '@/os/missions/contract';
 import { useMissions, useSim } from '@/os/OsProvider';
-import { contextFromSnapshot } from './missionView';
+import { contextFromSnapshot, projectsFromSnapshot } from './missionView';
 
 /** Formulario «Neue Mission»: objetivo, resultado esperado y umfang del informe. */
 export function MissionForm({ m, result }: Readonly<{ m: Messages; result: SnapshotResult }>) {
@@ -23,7 +23,7 @@ export function MissionForm({ m, result }: Readonly<{ m: Messages; result: Snaps
     // Un doble clic no crea dos misiones.
     if (!missions || submitting) return;
     const specialists = sim?.agents.filter((a) => a.kind === 'specialist').map((a) => a.id) ?? [];
-    const created = missions.create({ objective, expected, length }, contextFromSnapshot(result), specialists);
+    const created = missions.create({ objective, expected, length }, contextFromSnapshot(result), specialists, projectsFromSnapshot(result));
     if (!created.ok) {
       setError(created.reason);
       return;

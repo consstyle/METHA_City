@@ -1,11 +1,10 @@
 import { CAMPUS_UNITS } from '@/features/city/model/campus';
 import { curve } from './builder';
-import { BRIDGE } from './links';
 import { AVENUES, GREENS, PLAZAS, TREES } from './terrain';
 
 /**
  * Distancia libre (m) de un punto del suelo a lo ya construido: edificios con su pavimento,
- * calles, pasarela, plazas, jardines, árboles, aparcamientos y el anillo vial.
+ * calles, plazas, jardines, árboles, aparcamientos y el anillo vial.
  * Sirve para comprobar que los solares de los pabellones (D14) no pisan nada.
  */
 
@@ -14,7 +13,6 @@ const SAMPLES = 160;
 
 const sampled = (points: Parameters<typeof curve>[0]) => curve(points).getSpacedPoints(SAMPLES).map((p) => [p.x, p.z] as const);
 const AVENUE_POINTS = AVENUES.map(sampled);
-const BRIDGE_POINTS = sampled(BRIDGE);
 /** Coches aparcados y marcas de aparcamiento (vehicles.ts). */
 const PARKING: readonly (readonly [number, number])[] = [
   [-17.4, 6.6], [-13.6, 6.4], [-4.2, -7.1], [-2.7, -7.1], [16.2, 1.5], [16.2, 2.6], [9.8, -4.8], [8.6, -4.8], [16.7, 1.4], [6.9, -3.2],
@@ -49,7 +47,6 @@ export function clearance(x: number, z: number): number {
   return Math.max(0, Math.min(
     ...buildings,
     ...avenues,
-    nearest(x, z, BRIDGE_POINTS) - 0.35,
     ...plazas,
     ...greens,
     nearest(x, z, TREES) - 0.5,

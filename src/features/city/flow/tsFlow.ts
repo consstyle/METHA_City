@@ -14,21 +14,27 @@ export const KIND_COLORS: Readonly<Record<TsKind, number>> = {
   plan: 0xf26a21, zuteilung: 0xf7b45d, bereit: 0xe3dac4, fertig: 0x7fc4e0,
 };
 
+/** Origen y destino: un edificio del campus o la obra de un proyecto (`projekt:<id>`). */
 export interface TsEvent {
   readonly nr: number;
-  readonly from: UnitId;
-  readonly to: UnitId;
+  readonly from: UnitId | string;
+  readonly to: UnitId | string;
   readonly kind: TsKind;
 }
 
 /** Departamentos a los que AVOR reparte los TS. */
 export const WORKSHOPS: readonly UnitId[] = ['schlosserei', 'blech', 'einkauf'];
 
-/** Todos los movimientos posibles del ciclo (para comprobar que hay ruta para cada uno). */
+/** Sin proyectos activos, los TS terminados salen por el Werkhof (expedición). */
+export const NO_SITE_DESTINATION: UnitId = 'werkhof';
+/** Los TS terminados salen de AVOR hacia la obra de su proyecto. */
+export const SITE_ORIGIN: UnitId = 'avor';
+
+/** Movimientos del ciclo dentro del campus (para comprobar que hay ruta para cada uno). */
 export const FLOW_PAIRS: readonly (readonly [UnitId, UnitId])[] = [
-  ['projektleitung', 'avor'],
+  ['planer', 'avor'],
   ...WORKSHOPS.flatMap((w) => [['avor', w] as const, [w, 'avor'] as const]),
-  ['avor', 'bau'],
+  [SITE_ORIGIN, NO_SITE_DESTINATION],
 ];
 
 export const MAX_ACTIVE = 10;
@@ -65,18 +71,22 @@ export const createFlowDemo = (): FlowDemo => ({
  * Siguiente movimiento de la simulación (Plan fertig → AVOR → reparto → bereit → AVOR → fertig → obra).
  * `now` es el reloj simulado de la escena (no avanza si no se dibuja). El TS movido queda ocupado
  * hasta que su camión llega (`releaseTs`): así nunca hay dos camiones con el mismo TS.
+ * `sites`: ids de las obras de los proyectos activos (destino de los TS terminados).
  */
-export function demoTick(demo: FlowDemo, now: number, rnd: () => number): { demo: FlowDemo; event: TsEvent | null } {
+export function demoTick(
+  demo: FlowDemo, now: number, rnd: () => number, sites: readonly string[] = [],
+): { demo: FlowDemo; event: TsEvent | null } {
   const free = demo.ts.filter((t) => t.until <= now);
   const startNew = demo.ts.length < MAX_TS && (rnd() < 0.4 || free.length === 0);
   const t: DemoTs | undefined = startNew ? { nr: demo.next, stage: 0, dept: null, until: 0 } : free[Math.floor(rnd() * free.length)];
   if (!t) return { demo, event: null };
   const dept = t.stage === 1 ? (WORKSHOPS[Math.floor(rnd() * WORKSHOPS.length)] ?? 'schlosserei') : t.dept ?? 'schlosserei';
+  const site = t.stage === 3 ? (sites[Math.floor(rnd() * sites.length)] ?? NO_SITE_DESTINATION) : NO_SITE_DESTINATION;
   const event: TsEvent =
-    t.stage === 0 ? { nr: t.nr, from: 'projektleitung', to: 'avor', kind: 'plan' }
+    t.stage === 0 ? { nr: t.nr, from: 'planer', to: 'avor', kind: 'plan' }
       : t.stage === 1 ? { nr: t.nr, from: 'avor', to: dept, kind: 'zuteilung' }
         : t.stage === 2 ? { nr: t.nr, from: dept, to: 'avor', kind: 'bereit' }
-          : { nr: t.nr, from: 'avor', to: 'bau', kind: 'fertig' };
+          : { nr: t.nr, from: SITE_ORIGIN, to: site, kind: 'fertig' };
   const moved: DemoTs = { nr: t.nr, stage: t.stage + 1, dept, until: Number.POSITIVE_INFINITY };
   const others = demo.ts.filter((x) => x.nr !== t.nr);
   return {

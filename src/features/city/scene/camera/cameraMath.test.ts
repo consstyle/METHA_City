@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CAMERA_DEFAULTS, LIMITS, applyDrag, applyPinch, applyWheel, blendFactor, clampPitch, clampZoom,
-  focusTargetFor, frustum, orbitPosition,
+  ISLAND_REACH, focusTargetFor, frustum, orbitPosition, sceneExtent,
 } from './cameraMath';
 
 const close = (a: number, b: number, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} ≉ ${b}`);
@@ -61,4 +61,15 @@ test('la amortiguación es instantánea con movimiento reducido', () => {
 
 test('el enfoque apunta al edificio a un 35 % de su altura', () => {
   assert.deepEqual(focusTargetFor({ position: { x: -6, z: -1 }, size: { h: 8.8 } }), [-6, 8.8 * 0.35, -1]);
+});
+
+test('con obras alrededor de la isla el encuadre y el zoom máximo crecen en la misma proporción', () => {
+  assert.equal(sceneExtent([]), 1);
+  assert.equal(sceneExtent([{ x: 5, z: 5 }]), 1, 'cerca del centro no hace falta agrandar');
+  const extent = sceneExtent([{ x: -40, z: 0 }, { x: 10, z: 20 }]);
+  close(extent, (40 + 9) / ISLAND_REACH);
+  close(frustum(2, 1, extent).right, frustum(2, 1).right * extent);
+  assert.equal(clampZoom(10, extent), LIMITS.zoomMax * extent);
+  assert.equal(applyWheel(LIMITS.zoomMax, -2000, extent), Math.min(LIMITS.zoomMax * Math.exp(2), LIMITS.zoomMax * extent));
+  assert.equal(applyPinch(1, 100, 1000, extent), LIMITS.zoomMax * extent);
 });

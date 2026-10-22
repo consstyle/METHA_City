@@ -1,5 +1,7 @@
 import type { SnapshotResult } from '@/data/load';
+import { projectTeamIds } from '@/features/city/model/projects';
 import type { MissionContext } from '@/os/missions/contract';
+import type { PlannerProject } from '@/os/missions/planner';
 
 /** Foto de MethaDesk para el informe: suma de las unidades con datos (null si la fuente falló). */
 export function contextFromSnapshot(result: SnapshotResult): MissionContext | null {
@@ -13,6 +15,16 @@ export function contextFromSnapshot(result: SnapshotResult): MissionContext | nu
     overdue: sum((u) => u.alerts.montageUeberfaellig),
     rework: sum((u) => u.alerts.nachbearbeitung),
   };
+}
+
+/** Proyectos activos con sus agentes, para que el plan reparta el trabajo de obra (F5c). */
+export function projectsFromSnapshot(result: SnapshotResult): PlannerProject[] {
+  if (!result.ok) return [];
+  const ids = projectTeamIds(result.snapshot.projects);
+  return result.snapshot.projects.flatMap((p) => {
+    const agents = ids.get(p.projektId);
+    return agents ? [{ projektnummer: p.projektnummer, projektname: p.projektname, agents }] : [];
+  });
 }
 
 /** Bloques del informe Markdown para pintarlo con React (sin innerHTML). */

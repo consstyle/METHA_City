@@ -1,28 +1,17 @@
 import * as THREE from 'three';
 import { unitById } from '@/features/city/model/hierarchy';
 import type { RelationDef, UnitDef } from '@/features/city/model/types';
-import { curve, type Point3, type SceneBuilder } from './builder';
+import type { Point3, SceneBuilder } from './builder';
 import { ORANGE } from './materials';
 
-/** Trazado de la pasarela elevada de coordinación entre Produktion / AVOR y Bauleitung. */
-export const BRIDGE: readonly Point3[] = [[-3.5, 1.4, -0.15], [0.2, 1.4, 0.2], [5.5, 1.4, 0.6], [10.9, 1.4, 1]];
-const COORDINATION_ROUTE: readonly Point3[] = [[-3.5, 2.08, -0.15], [1, 2.08, 0.2], [6, 2.08, 0.6], [10.9, 2.08, 1]];
 const COORD_COLOR = 0xe3d8bd;
 
-/** Pasarela elevada (separada de las rutas naranjas de dependencia). */
-export function buildBridge(b: SceneBuilder): void {
-  const { M } = b;
-  const path = curve(BRIDGE);
-  b.ribbon(path, 0.65, M.darkSteel);
-  b.ribbon(path, 0.09, M.coord, 0.035);
-  for (let i = 0; i <= 8; i++) {
-    const p = path.getPoint(i / 8);
-    b.box(p.x, 0.65, p.z, 0.09, 1.3, 0.09, M.steel);
-    b.box(p.x, 1.64, p.z - 0.32, 0.035, 0.5, 0.035, M.steel);
-    b.box(p.x, 1.64, p.z + 0.32, 0.035, 0.5, 0.035, M.steel);
-  }
-  b.line([[-3.5, 1.9, -0.47], [0.2, 1.9, -0.12], [5.5, 1.9, 0.28], [10.9, 1.9, 0.68]], 0x8e9698, 0.022);
-  b.line([[-3.5, 1.9, 0.17], [0.2, 1.9, 0.52], [5.5, 1.9, 0.92], [10.9, 1.9, 1.32]], 0x8e9698, 0.022);
+/** Ruta de coordinación elevada entre dos unidades (arco sobre la línea recta que las une). */
+function coordinationPoints(a: UnitDef, c: UnitDef): Point3[] {
+  const at = (t: number, y: number): Point3 => [
+    a.position.x + (c.position.x - a.position.x) * t, y, a.position.z + (c.position.z - a.position.z) * t,
+  ];
+  return [at(0.15, 1.6), at(0.4, 2.1), at(0.6, 2.1), at(0.85, 1.6)];
 }
 
 export interface RouteAnimation {
@@ -58,7 +47,7 @@ export function buildRoutes(b: SceneBuilder, units: readonly UnitDef[], relation
     const to = unitById(units, relation.to);
     if (!from || !to) return [];
     const coord = relation.kind === 'coordination';
-    const c = b.line(coord ? COORDINATION_ROUTE : hierarchyPoints(from, to), coord ? COORD_COLOR : ORANGE, coord ? 0.035 : 0.045, group);
+    const c = b.line(coord ? coordinationPoints(from, to) : hierarchyPoints(from, to), coord ? COORD_COLOR : ORANGE, coord ? 0.035 : 0.045, group);
     const tube = group.children[group.children.length - 1] as THREE.Mesh;
     const dots = Array.from({ length: coord ? 4 : 2 }, () => {
       const q = new THREE.Mesh(new THREE.SphereGeometry(coord ? 0.1 : 0.085, 8, 6), coord ? b.M.coord : b.M.warm);

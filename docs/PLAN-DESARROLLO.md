@@ -174,6 +174,23 @@ Imagen Docker (`output: standalone`), servicio en Dokploy, acceso con usuario y 
 | D23 | Cómo llega el código al VPS | Sin remoto Git (no se sube a GitHub): **zip con `git archive`** subido a Dokploy («Drop») con build por Dockerfile. Alternativa: copiar por SSH y `docker compose` con las etiquetas de Traefik de Dokploy. |
 | D24 | Vida de la demo | Solo datos simulados. Tras la sesión de comentarios se cambia la contraseña o se para el servicio. Cada navegador guarda sus propios datos (localStorage): no hay datos compartidos entre usuarios. |
 
+### F5c · La ciudad es el campus; los proyectos, obras alrededor
+Concepto (decidido con el usuario): **Bau** y **Bauleitung** pertenecen a un proyecto, no a la empresa. La ciudad muestra solo el campus de METHABAU y cada proyecto activo de MethaDesk es una obra fuera de la isla, unida por carretera, con su propia Projektleitung y Bauleitung.
+
+| # | Decisión | Elegido |
+|---|---|---|
+| D25 | Campus | AVOR, **Planer** (edificio propio, de él salen los TS «Plan fertig»), Einkauf, Schlosserei, Blech y Werkhof. Desaparecen los edificios Projektleitung, Bauleitung y Bau. |
+| D26 | Obras | **Todos los proyectos activos** (no archivados) de `mc.projekt_kennzahlen`, cada uno en su plataforma **alrededor de la isla**, unida por una carretera desde el anillo vial. Si hay muchos, el anillo de obras se aleja para que quepan. |
+| D27 | En cada obra | La obra (grúa, estructura, contenedores) y dos oficinas de obra conectadas: **Projektleitung** y **Bauleitung** del proyecto. |
+| D28 | Agentes | **Un par por proyecto**: «Projektleitung DEV-001» y «Bauleitung DEV-001». El Chief delega en AVOR y en cada Projektleitung; Projektleitung → Bauleitung; AVOR se coordina con cada Bauleitung. |
+| D29 | Flujo de TS | Planer → AVOR (Plan fertig) → talleres → AVOR → **obra del proyecto** (fertig), por la carretera de esa obra. |
+
+Notas de implementación:
+- Los departamentos de MethaDesk `projektleiter`, `bauleiter`, `montage`, `bau` y `subunternehmer` ya no suman en ningún edificio del campus: sus números se ven por proyecto (`mc.projekt_kennzahlen`).
+- Los solares de pabellones de especialistas son los 8 del campus; las obras no tienen pabellones.
+- El encuadre inicial de la cámara crece para que entren las obras (`sceneExtent`); las rutas de los camiones evitan los tramos que rozan una fachada.
+- Proyectos de ejemplo del simulador: GAZ Ausbildungszentrum (Beringen), Innloc AG (Rothenburg) y BB20 (Wädenswil), con cifras inventadas.
+
 ### F6 · Operación — *V1*
 Dokumente (biblioteca: ver, editar, descargar, borrar), Dateien (espacios de trabajo), Zeitpläne y órdenes permanentes, Gedächtnis (individual y compartida), System (salud completa) y Einstellungen.
 

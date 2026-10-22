@@ -4,9 +4,11 @@ import { clearance } from '@/features/city/scene/builder/clearance';
 import { CAMPUS_UNITS, ORCHESTRATOR_AGENT } from './campus';
 import { isKnownAgent, PAVILION_LOTS, SPECIALISTS, specialistById } from './specialists';
 
-test('isKnownAgent reconoce al Chief, las unidades y los especialistas', () => {
-  for (const id of ['chief', 'bau', 'avor', 'bim', 'recht']) assert.ok(isKnownAgent(id), id);
-  for (const id of [undefined, '', 'nope', 'planer']) assert.equal(isKnownAgent(id), false, String(id));
+test('isKnownAgent reconoce al Chief, las unidades, los especialistas y los equipos de proyecto', () => {
+  for (const id of ['chief', 'planer', 'avor', 'bim', 'recht', 'pl-dev-001', 'bl-dev-003']) assert.ok(isKnownAgent(id), id);
+  for (const id of [undefined, '', 'nope', 'bau', 'bauleitung', 'pl-', 'xl-dev-001', 'pl-DEV-001', `pl-${'a'.repeat(80)}`]) {
+    assert.equal(isKnownAgent(id), false, String(id));
+  }
 });
 
 test('el catálogo tiene los 14 papeles de §3.1, con ids únicos que no chocan con unidades ni con el Chief', () => {
@@ -25,11 +27,9 @@ test('cada especialista depende de una unidad de su mismo distrito', () => {
   }
 });
 
-test('hay 4 solares por distrito, en su lado de la isla y separados entre sí', () => {
-  for (const district of ['industrial', 'project'] as const) {
-    assert.equal(PAVILION_LOTS.filter((l) => l.district === district).length, 4, district);
-  }
-  for (const l of PAVILION_LOTS) assert.equal(l.x < 3, l.district === 'industrial', `${l.id} en el lado equivocado`);
+test('hay 8 solares en el campus (las obras no tienen pabellones) y separados entre sí', () => {
+  assert.equal(PAVILION_LOTS.length, 8);
+  assert.ok(PAVILION_LOTS.every((l) => l.district === 'industrial'));
   for (const a of PAVILION_LOTS) for (const b of PAVILION_LOTS) {
     if (a.id < b.id) assert.ok(Math.hypot(a.x - b.x, a.z - b.z) >= 3, `${a.id} y ${b.id} demasiado cerca`);
   }
@@ -46,6 +46,6 @@ test('clearance es 0 sobre un edificio y fuera del anillo vial', () => {
 });
 
 test('specialistById encuentra un papel y devuelve undefined para lo desconocido', () => {
-  assert.equal(specialistById('bim')?.unitId, 'projektleitung');
+  assert.equal(specialistById('bim')?.unitId, 'planer');
   assert.equal(specialistById('nope'), undefined);
 });

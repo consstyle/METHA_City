@@ -16,7 +16,7 @@ test('reúne planes, resultados y contrataciones; pendientes por antigüedad y v
   const hiring = requestHire(EMPTY_HIRING, 'bim', after(10_000));
   const { pending, history } = collectApprovals(hiring, [waiting], m);
   assert.deepEqual(pending.map((p) => [p.source, p.title]), [['plan', 'Plan für «Montagen planen»'], ['hire', 'BIM-Koordination einstellen']]);
-  assert.match(pending[0]!.detail, /4 Schritte mit Bauleitung, Bau/);
+  assert.match(pending[0]!.detail, /4 Schritte mit Produktion \/ AVOR, Planer/);
   assert.deepEqual(history, []);
   assert.equal(pendingCount(hiring, [waiting]), 2);
 

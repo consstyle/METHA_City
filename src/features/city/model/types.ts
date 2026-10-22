@@ -3,9 +3,8 @@
 export const DISTRICT_IDS = ['industrial', 'project'] as const;
 export type DistrictId = (typeof DISTRICT_IDS)[number];
 
-export const UNIT_IDS = [
-  'avor', 'einkauf', 'schlosserei', 'blech', 'werkhof', 'projektleitung', 'bauleitung', 'bau',
-] as const;
+/** Edificios del campus (F5c, D25). Projektleitung, Bauleitung y Bau pertenecen a cada proyecto. */
+export const UNIT_IDS = ['avor', 'planer', 'einkauf', 'schlosserei', 'blech', 'werkhof'] as const;
 export type UnitId = (typeof UNIT_IDS)[number];
 
 export const ARCHETYPES = ['tower', 'office', 'terrace', 'factory', 'sawtooth', 'logistics', 'site'] as const;

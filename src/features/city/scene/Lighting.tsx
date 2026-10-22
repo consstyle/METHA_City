@@ -10,11 +10,26 @@ export const LIGHTING = {
   day: { hemi: 3.1, sun: 4.5, fill: 2.7, sunColor: 0xfff0dc, exposure: 1.15 },
 } as const;
 
-export function Lighting({ day }: Readonly<{ day: boolean }>) {
+/** Volumen de sombras de la isla (en el espacio de la luz); con obras crece con el encuadre. */
+const SHADOW_HALF = { x: 36, y: 30 } as const;
+
+/** `extent` (sceneExtent): las sombras también llegan a las obras de alrededor de la isla. */
+export function Lighting({ day, extent = 1 }: Readonly<{ day: boolean; extent?: number }>) {
   const gl = useThree((s) => s.gl);
   const hemi = useRef<THREE.HemisphereLight>(null);
   const sun = useRef<THREE.DirectionalLight>(null);
   const fill = useRef<THREE.DirectionalLight>(null);
+
+  useEffect(() => {
+    const cam = sun.current?.shadow.camera;
+    if (!cam) return;
+    cam.left = -SHADOW_HALF.x * extent;
+    cam.right = SHADOW_HALF.x * extent;
+    cam.top = SHADOW_HALF.y * extent;
+    cam.bottom = -SHADOW_HALF.y * extent;
+    cam.updateProjectionMatrix();
+    gl.shadowMap.needsUpdate = true;
+  }, [extent, gl]);
 
   useEffect(() => {
     const l = day ? LIGHTING.day : LIGHTING.sunset;
@@ -38,10 +53,6 @@ export function Lighting({ day }: Readonly<{ day: boolean }>) {
         color={LIGHTING.sunset.sunColor}
         castShadow
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-36}
-        shadow-camera-right={36}
-        shadow-camera-top={30}
-        shadow-camera-bottom={-30}
         shadow-camera-near={1}
         shadow-camera-far={110}
         shadow-normalBias={0.035}

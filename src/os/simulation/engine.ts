@@ -17,9 +17,11 @@ const STALE_TICKS = 10;
 
 export interface SimAgent {
   readonly id: string;
-  readonly kind: 'orchestrator' | 'unit' | 'specialist';
+  readonly kind: 'orchestrator' | 'unit' | 'specialist' | 'project';
   /** Unidad propia (agente de unidad) o a la que sirve (especialista). */
   readonly unitId: UnitId | null;
+  /** Proyecto de MethaDesk (agentes de proyecto, F5c). */
+  readonly projectId?: string | null;
   readonly state: 'idle' | 'working' | 'waiting';
   readonly taskIndex: number | null;
   /** Paso de misión que lo tiene ocupado (texto libre); null si trabaja con el motor. */
@@ -86,13 +88,14 @@ export interface DelegationLink {
  * enlace de coordinación y a sus especialistas.
  */
 export function delegationTargets(agentId: string, relations: readonly RelationDef[], links: readonly DelegationLink[] = []): string[] {
-  if (agentId === ORCHESTRATOR_AGENT) return CAMPUS_UNITS.filter((u) => u.parent === null).map((u) => u.id);
+  const linked = links.filter((l) => l.from === agentId).map((l) => l.to);
+  if (agentId === ORCHESTRATOR_AGENT) return [...CAMPUS_UNITS.filter((u) => u.parent === null).map((u) => u.id), ...linked];
   const city = relations.flatMap((r) => {
     if (r.kind === 'hierarchy') return r.from === agentId ? [r.to] : [];
     if (r.from === agentId) return [r.to];
     return r.to === agentId ? [r.from] : [];
   });
-  return [...city, ...links.filter((l) => l.from === agentId).map((l) => l.to)];
+  return [...city, ...linked];
 }
 
 export function createSimulation(seed: number, now: Date): SimState {

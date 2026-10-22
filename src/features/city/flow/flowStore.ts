@@ -14,8 +14,11 @@ export interface FlowState {
   readonly seq: number;
   /** Ya se aplicó el valor por defecto de «menos movimiento» (solo una vez por visita). */
   readonly motionDefaultApplied: boolean;
-  /** Propone el siguiente movimiento (el TS queda ocupado hasta `arrived`). */
-  next(elapsedMs: number, rnd: () => number): TsEvent | null;
+  /**
+   * Propone el siguiente movimiento (el TS queda ocupado hasta `arrived`). `sites`: ids de las obras
+   * de los proyectos, destino de los TS terminados (sin obras van al Werkhof).
+   */
+  next(elapsedMs: number, rnd: () => number, sites?: readonly string[]): TsEvent | null;
   /** El camión del TS llegó a su destino. */
   arrived(nr: number, elapsedMs: number): void;
   /** Movimiento que sí salió a la calle: entra en el feed. */
@@ -32,9 +35,9 @@ export const createFlowStore = () =>
     clock: 0,
     seq: 0,
     motionDefaultApplied: false,
-    next: (elapsedMs, rnd) => {
+    next: (elapsedMs, rnd, sites = []) => {
       const clock = get().clock + elapsedMs;
-      const { demo, event } = demoTick(get().demo, clock, rnd);
+      const { demo, event } = demoTick(get().demo, clock, rnd, sites);
       set({ clock, demo });
       return event;
     },

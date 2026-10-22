@@ -3,7 +3,7 @@ import { deriveRelations } from '@/features/city/model/hierarchy';
 import { format, type Messages } from '@/i18n';
 import { agentName, agentTaskText } from '../format';
 import { delegationTargets, type SimAgent } from '../simulation/engine';
-import { specialistLinks } from '../simulation/roster';
+import { projectLinks, specialistLinks, type ProjectTeam } from '../simulation/roster';
 import { profileOf } from './profile';
 
 /**
@@ -26,6 +26,7 @@ const PATTERNS: Record<Intent, RegExp> = {
 export type KpiContext =
   | { readonly kind: 'unit'; readonly hasData: boolean; readonly open: number; readonly total: number; readonly overdue: number; readonly rework: number }
   | { readonly kind: 'all'; readonly overdue: number; readonly rework: number }
+  | { readonly kind: 'project'; readonly projekt: string; readonly total: number; readonly verbaut: number; readonly overdue: number; readonly rework: number }
   | { readonly kind: 'specialist' }
   | { readonly kind: 'unavailable' };
 
@@ -43,6 +44,8 @@ export interface ReplyContext {
   readonly kpis: KpiContext;
   /** Especialistas contratados (para a quién puede delegar una unidad). */
   readonly specialists: readonly string[];
+  /** Equipos de los proyectos activos (Chief → Projektleitung → Bauleitung, AVOR ↔ Bauleitung). */
+  readonly teams?: readonly ProjectTeam[];
 }
 
 const RELATIONS = deriveRelations(CAMPUS_UNITS);
@@ -67,13 +70,15 @@ function kpiReply(c: ReplyContext, m: Messages): string {
   const unit = agentName(c.agent?.unitId ?? c.agentId, m);
   if (k.kind === 'unavailable') return m.replies.kpisUnavailable;
   if (k.kind === 'all') return format(m.replies.kpisChief, { overdue: k.overdue, rework: k.rework });
+  if (k.kind === 'project') return format(m.replies.kpisProject, { projekt: k.projekt, total: k.total, verbaut: k.verbaut, overdue: k.overdue, rework: k.rework });
   if (k.kind === 'specialist') return format(m.replies.kpisSpecialist, { unit });
   if (!k.hasData) return format(m.replies.kpisNone, { unit });
   return format(m.replies.kpis, { unit, open: k.open, total: k.total, overdue: k.overdue, rework: k.rework });
 }
 
 function delegateReply(c: ReplyContext, m: Messages): string {
-  const targets = delegationTargets(c.agentId, RELATIONS, specialistLinks(c.specialists)).map((t) => agentName(t, m));
+  const links = [...specialistLinks(c.specialists), ...projectLinks(c.teams ?? [])];
+  const targets = delegationTargets(c.agentId, RELATIONS, links).map((t) => agentName(t, m));
   if (c.agent?.kind === 'orchestrator') return format(m.replies.chiefDelegate, { targets: joinNames(targets, m) });
   if (targets.length === 0) return m.replies.delegateAlone;
   return format(m.replies.delegate, { target: joinNames(targets, m) });

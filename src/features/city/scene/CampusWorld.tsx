@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
+import { useStore } from 'zustand';
 import { CAMPUS_UNITS } from '@/features/city/model/campus';
 import { deriveRelations } from '@/features/city/model/hierarchy';
 import type { CityStore } from '@/features/city/state/cityStore';
@@ -32,11 +33,17 @@ const pickId = (e: ThreeEvent<PointerEvent | MouseEvent>): string | undefined =>
 
 /** Ciudad construida una vez; React solo gestiona selección, rutas, luz y animaciones. */
 export function CampusWorld({ store, osStore, hiringStore, flow, reducedMotion }: Props) {
-  const campus = useMemo(() => buildCampus(CAMPUS_UNITS, deriveRelations(CAMPUS_UNITS)), []);
+  // Las obras cambian solo si cambia la lista de proyectos activos: entonces se reconstruye la ciudad.
+  const sites = useStore(store, (s) => s.sites);
+  const campus = useMemo(() => buildCampus(CAMPUS_UNITS, deriveRelations(CAMPUS_UNITS), sites), [sites]);
   const gl = useThree((s) => s.gl);
   const hovered = useRef<string | null>(null);
 
   useEffect(() => () => campus.dispose(), [campus]);
+  // Las sombras son estáticas (autoUpdate desactivado): una ciudad reconstruida las recalcula.
+  useEffect(() => {
+    gl.shadowMap.needsUpdate = true;
+  }, [gl, campus]);
 
   useEffect(() => {
     const apply = () => {
@@ -73,7 +80,7 @@ export function CampusWorld({ store, osStore, hiringStore, flow, reducedMotion }
   return (
     <>
       <primitive object={campus.root} />
-      <AgentBeacons osStore={osStore} campus={campus} reducedMotion={reducedMotion} />
+      <AgentBeacons osStore={osStore} campus={campus} sites={sites} reducedMotion={reducedMotion} />
       {osStore && hiringStore && (
         <Pavilions osStore={osStore} hiringStore={hiringStore} materials={campus.materials} reducedMotion={reducedMotion} />
       )}

@@ -5,6 +5,8 @@ export interface CityDiagnosticsState {
   view: string;
   options: Record<'auto' | 'links' | 'tags' | 'day' | 'flow', boolean>;
   camera: { yaw: number; pitch: number; zoom: number; target: number[]; topView: boolean; focus: string | null };
+  /** Factor de encuadre por las obras de los proyectos (1 = solo la isla). */
+  extent: number;
 }
 
 /** Abre la página y espera a que la escena 3D haya dibujado sus primeros fotogramas. */

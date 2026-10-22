@@ -25,7 +25,9 @@ export function Cockpit({ m, result }: Readonly<{ m: Messages; result: SnapshotR
   const counts = useCounts();
   const approvals = counts?.approvals ?? null;
   const units = result.ok ? result.snapshot.units.filter((u) => u.hasData) : [];
-  const alerts = units.reduce((s, u) => s + u.alerts.montageUeberfaellig + u.alerts.nachbearbeitung, 0);
+  const projects = result.ok ? result.snapshot.projects : [];
+  const alerts = units.reduce((s, u) => s + u.alerts.montageUeberfaellig + u.alerts.nachbearbeitung, 0)
+    + projects.reduce((s, p) => s + p.montageUeberfaellig + p.nachbearbeitung, 0);
   const working = sim?.agents.filter((a) => a.state === 'working').length;
   const dash = '—';
 

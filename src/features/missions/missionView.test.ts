@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MockDataSource } from '@/data/mock/MockDataSource';
-import { contextFromSnapshot, parseReport, reportFileName } from './missionView';
+import { contextFromSnapshot, parseReport, projectsFromSnapshot, reportFileName } from './missionView';
 
 const T = new Date('2026-10-22T09:00:00Z');
 
@@ -25,4 +25,12 @@ test('el informe Markdown se convierte en bloques (títulos, listas, cita, firma
 test('nombre de archivo del informe sin acentos ni símbolos', () => {
   assert.equal(reportFileName('Überfällige Montagen: Woche 43!'), 'bericht-uberfallige-montagen-woche-43.md');
   assert.equal(reportFileName('«»'), 'bericht-mission.md');
+});
+
+test('projectsFromSnapshot da al planificador cada proyecto con su Projektleitung y Bauleitung', async () => {
+  const snapshot = await new MockDataSource({ scenario: 'normal', now: () => T }).getSnapshot();
+  assert.deepEqual(projectsFromSnapshot({ ok: true, snapshot })[1], {
+    projektnummer: 'DEV-002', projektname: 'Innloc AG, Rothenburg', agents: { pl: 'pl-dev-002', bl: 'bl-dev-002' },
+  });
+  assert.deepEqual(projectsFromSnapshot({ ok: false }), []);
 });

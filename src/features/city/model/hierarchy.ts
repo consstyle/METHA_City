@@ -1,5 +1,5 @@
 import { ABTEILUNG_IDS, type AbteilungId, type DistrictId, type RelationDef, type UnitDef } from './types';
-import { CAMPUS_COORDINATION } from './campus';
+import { CAMPUS_COORDINATION, PROJECT_DEPARTMENTS } from './campus';
 
 const byCode = (a: UnitDef, b: UnitDef) => a.code.localeCompare(b.code);
 
@@ -103,8 +103,9 @@ function subunitProblems(units: readonly UnitDef[]): string[] {
 function coverageProblems(units: readonly UnitDef[], requireFullCoverage: boolean): string[] {
   const assigned = units.flatMap(departmentsOf);
   const repeated = duplicates(assigned).map((d) => `departamento ${d} asignado a más de una unidad`);
+  // Los departamentos de obra pertenecen a los proyectos (F5c), no a un edificio del campus.
   const missing = requireFullCoverage
-    ? ABTEILUNG_IDS.filter((d) => !assigned.includes(d)).map((d) => `departamento ${d} sin asignar`)
+    ? ABTEILUNG_IDS.filter((d) => !assigned.includes(d) && !PROJECT_DEPARTMENTS.includes(d)).map((d) => `departamento ${d} sin asignar`)
     : [];
   return [...repeated, ...missing];
 }

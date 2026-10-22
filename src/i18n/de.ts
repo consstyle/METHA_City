@@ -56,6 +56,7 @@ export const de = {
     off: '«TS-Fluss» einschalten, um die Bewegungen zu sehen.',
     tag: 'TS {nr}',
     route: '{from} → {to}',
+    site: 'Baustelle {nr}',
     kinds: {
       plan: 'Plan fertig',
       zuteilung: 'Zuteilung durch AVOR',
@@ -79,7 +80,7 @@ export const de = {
   labels: {
     orchestrator: 'ORCHESTRATOR',
     industrial: 'INDUSTRIEBEZIRK',
-    projectLevel: 'PROJEKTE · EBENE {n}',
+    site: 'BAUSTELLE · {nr}',
     select: '{name} auswählen',
   },
   hierarchy: {
@@ -88,12 +89,15 @@ export const de = {
     titleLine2: 'auf einen Blick.',
     intro: 'DIE STRUKTUR, DIE DIE STADT FORMT',
     industrial: '01 / INDUSTRIEBEZIRK',
-    project: '02 / PROJEKTBEZIRK',
+    project: '02 / BAUSTELLEN',
     bridge: 'QUERVERBINDUNG · KOORDINATION',
+    bridgeTarget: 'Bauleitung jeder Baustelle',
+    team: 'Projektleitung → Bauleitung',
+    noSites: 'Keine aktiven Projekte.',
   },
   agents: {
     chief: 'Methabau Chief',
-    chiefRole: 'ORCHESTRATOR · KOORDINIERT BEIDE BEZIRKE',
+    chiefRole: 'ORCHESTRATOR · KOORDINIERT CAMPUS UND BAUSTELLEN',
     state: 'Status',
     task: 'Aktuelle Aufgabe',
     lastActive: 'Zuletzt aktiv',
@@ -144,6 +148,7 @@ export const de = {
     activityTitle: 'LETZTE AKTIVITÄT',
     noActivity: 'Noch keine Aktivität.',
     methadeskTitle: 'METHADESK NACH BEZIRK',
+    verbaut: 'verbaut',
     starting: 'Das System startet …',
     showInCity: 'In der Stadt zeigen',
   },
@@ -186,11 +191,18 @@ export const de = {
         'Lagerplätze für eingehende Pakete zuweisen',
         'Rückmeldungen an den Bau zu Teilmengen senden',
       ],
+      planer: [
+        'Pläne für die nächsten Teilsysteme fertigstellen',
+        'Plan-Status «fertig» für eine Gruppe setzen',
+        'Planänderungen der Bauleitung einarbeiten',
+        'Abgabetermine der Pläne mit AVOR abstimmen',
+      ],
+      // Equipos de cada obra (F5c): las tareas son las de su papel, en su proyecto.
       projektleitung: [
-        'Wochenbericht für die laufenden Projekte erstellen',
-        'Risiken mit überfälligen Montagen bewerten',
-        'Planfreigaben mit den Planern abstimmen',
-        'Meilensteine der Projekte aktualisieren',
+        'Wochenbericht für das Projekt erstellen',
+        'Risiken der überfälligen Montagen bewerten',
+        'Planfreigaben mit dem Planer abstimmen',
+        'Meilensteine des Projekts aktualisieren',
       ],
       bauleitung: [
         'Abrufe für die nächsten Tage prüfen',
@@ -198,18 +210,12 @@ export const de = {
         'Koordination mit Produktion / AVOR vorbereiten',
         'Lieferdaten für die Baustelle bestätigen',
       ],
-      bau: [
-        'Montageplan der nächsten 14 Tage abstimmen',
-        'Materialbestellung für die Baustelle ergänzen',
-        'Erhalt der gelieferten Teile bestätigen',
-        'Einsatz der Montageteams planen',
-      ],
       ...specialistTasks,
     },
   },
   legend: {
     hierarchy: 'HIERARCHISCHE ABHÄNGIGKEIT',
-    coordination: 'KOORDINATION ZWISCHEN BEZIRKEN',
+    sites: 'STRASSE ZU DEN BAUSTELLEN',
     ts: 'TS UNTERWEGS AUF DEN STRASSEN',
     drag: 'ZIEHEN ZUM DREHEN',
     wheel: 'MAUSRAD ZUM ZOOMEN',
@@ -217,7 +223,7 @@ export const de = {
   },
   districts: {
     industrial: 'Industriebezirk',
-    project: 'Projektbezirk',
+    project: 'Baustellen',
   },
   panel: {
     top: 'STRUKTUR DER STADT',
@@ -232,8 +238,6 @@ export const de = {
     dependsOn: 'Untersteht',
     children: 'Unterstellte Einheiten',
     structure: 'STRUKTUR DER STADT',
-    bridgeBadge: 'KOORDINATIONSBRÜCKE',
-    bridgeText: '{a} ist verbunden mit {b}',
     agentTitle: 'AGENT',
     methadeskTitle: 'METHADESK',
     nextMontage: 'Nächster Montagetermin',
@@ -244,6 +248,19 @@ export const de = {
     approvalsPending: '{n} Freigaben ausstehend',
     openCockpit: 'Leitstand öffnen',
     note: 'Konzeptmodell der Organisation. Agenten simuliert, MethaDesk-Daten simuliert. Höhen = visuelle Hierarchie.',
+  },
+  site: {
+    short: 'BAUSTELLE',
+    role: 'PROJEKT · BAUSTELLE',
+    description:
+      'Baustelle des Projekts {nr}. Die Projektleitung führt das Projekt, die Bauleitung die Montage vor Ort. AVOR liefert die fertigen Teilsysteme über die Strasse an.',
+    plTitle: 'PROJEKTLEITUNG',
+    blTitle: 'BAULEITUNG',
+    verbaut: 'Teilsysteme verbaut',
+    express: 'Express',
+    abruf: 'Abrufe aktiv',
+    noData: 'Für dieses Projekt liegen keine Daten vor.',
+    focus: 'Diese Baustelle aus der Nähe ansehen',
   },
   data: {
     mock: 'SIMULIERTE DATEN',
@@ -257,6 +274,10 @@ export const de = {
     avor: {
       role: 'ORCHESTRIERENDER KERN',
       description: 'Das Koordinationszentrum des Industriebezirks. Es organisiert die Arbeitsvorbereitung und verbindet Einkauf, Schlosserei, Blechabteilung und Werkhof mit den Anforderungen der Baustelle.',
+    },
+    planer: {
+      role: 'PLANUNG UND PLÄNE',
+      description: 'Hier entsteht jedes Teilsystem: Der Planer erstellt und plant es für die Projekte. Mit Plan-Status «fertig» geht das Teilsystem über die Strasse zu Produktion / AVOR.',
     },
     einkauf: {
       role: 'BESCHAFFUNG',
@@ -273,18 +294,6 @@ export const de = {
     werkhof: {
       role: 'LOGISTIK UND MATERIAL',
       description: 'Material, Lager und logistische Unterstützung. Der Lade- und Versandhof gehört zum Bezirk von Produktion / AVOR.',
-    },
-    projektleitung: {
-      role: 'PROJEKTLEITUNG',
-      description: 'Die Spitze des Projektbezirks. Verantwortlich für die Bauleitung, die ihrerseits die Ausführung auf dem Bau leitet.',
-    },
-    bauleitung: {
-      role: 'BAULEITUNG',
-      description: 'Leitet die Baustelle unter der Projektleitung und koordiniert den Bau. Eine Querverbindung führt zu Produktion / AVOR für die Abstimmung zwischen Baustelle und Produktion.',
-    },
-    bau: {
-      role: 'AUSFÜHRUNG AUF DER BAUSTELLE',
-      description: 'Die Ausführung vor Ort. Untersteht der Bauleitung und ist als aktive Baustelle mit Rohbau, Kran und Containern dargestellt.',
     },
   },
   ...deAgents,

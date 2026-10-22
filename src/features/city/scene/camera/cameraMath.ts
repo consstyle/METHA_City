@@ -22,12 +22,27 @@ export const AUTO_ROTATE_SPEED = 0.09;
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 export const clampPitch = (p: number) => clamp(p, LIMITS.pitchMin, LIMITS.pitchMax);
-export const clampZoom = (z: number) => clamp(z, LIMITS.zoomMin, LIMITS.zoomMax);
+/** `extent` (sceneExtent): con obras el encuadre base es mayor, así que se puede acercar más. */
+export const clampZoom = (z: number, extent = 1) => clamp(z, LIMITS.zoomMin, LIMITS.zoomMax * extent);
 
-/** Encuadre: altura mínima de 34 unidades (más en pantallas estrechas), 59 % por encima del centro. */
-export function frustum(aspect: number, zoom: number) {
-  const h = Math.max(34, 54 / aspect) / zoom;
+/**
+ * Encuadre: altura mínima de 34 unidades (más en pantallas estrechas), 59 % por encima del centro.
+ * `extent` agranda el encuadre cuando hay obras de proyecto fuera de la isla (ver sceneExtent).
+ */
+export function frustum(aspect: number, zoom: number, extent = 1) {
+  const h = (Math.max(34, 54 / aspect) * extent) / zoom;
   return { left: (-h * aspect) / 2, right: (h * aspect) / 2, top: h * 0.59, bottom: -h * 0.41 };
+}
+
+/** Radio (m) que cubre el encuadre base: medio ancho mínimo (54 / 2) menos un pequeño margen. */
+export const ISLAND_REACH = 26;
+/** Margen alrededor del centro de una obra (media plataforma, la grúa y su etiqueta). */
+const SITE_MARGIN = 9;
+
+/** Factor de encuadre para que entren las obras más alejadas (1 = solo la isla). */
+export function sceneExtent(points: readonly { readonly x: number; readonly z: number }[]): number {
+  const reach = Math.max(0, ...points.map((p) => Math.hypot(p.x, p.z) + SITE_MARGIN));
+  return Math.max(1, reach / ISLAND_REACH);
 }
 
 export function orbitPosition(target: Vec3, yaw: number, pitch: number, distance = CAMERA_DISTANCE): Vec3 {
@@ -42,10 +57,10 @@ export function applyDrag(start: { yaw: number; pitch: number }, dx: number, dy:
   return { yaw: start.yaw - dx * 0.006, pitch: clampPitch(start.pitch + dy * 0.004) };
 }
 
-export const applyWheel = (zoom: number, deltaY: number) => clampZoom(zoom * Math.exp(-deltaY * 0.001));
+export const applyWheel = (zoom: number, deltaY: number, extent = 1) => clampZoom(zoom * Math.exp(-deltaY * 0.001), extent);
 
-export function applyPinch(startZoom: number, startDistance: number, distance: number): number {
-  return startDistance > 0 ? clampZoom((startZoom * distance) / startDistance) : startZoom;
+export function applyPinch(startZoom: number, startDistance: number, distance: number, extent = 1): number {
+  return startDistance > 0 ? clampZoom((startZoom * distance) / startDistance, extent) : startZoom;
 }
 
 /** Fracción de acercamiento al valor deseado en este fotograma (1 = sin animación). */

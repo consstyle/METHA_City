@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { labelAnchorHeight } from '@/features/city/model/hierarchy';
-import type { RelationDef, UnitDef, UnitId } from '@/features/city/model/types';
+import { SITE_PLATFORM, type ProjectSite } from '@/features/city/model/projects';
+import type { RelationDef, UnitDef } from '@/features/city/model/types';
 import { createSceneBuilder, disposeObject } from './builder';
 import { ORANGE } from './materials';
 import { buildIndustrial } from './archetypes/industrial';
@@ -8,14 +9,17 @@ import { buildOffice, buildTerrace, buildTower } from './archetypes/offices';
 import { buildSite } from './archetypes/site';
 import { buildTerrain } from './terrain';
 import { buildParking, buildTraffic } from './vehicles';
-import { buildBridge, buildRoutes } from './links';
+import { buildRoutes } from './links';
+import { buildProjectSites, SITE_LABEL_HEIGHT } from './projectSites';
 
 const ARCHETYPE_BUILDERS = {
   tower: buildTower, office: buildOffice, terrace: buildTerrace, site: buildSite,
   factory: buildIndustrial, sawtooth: buildIndustrial, logistics: buildIndustrial,
 } as const;
 
-function selectionRing(u: UnitDef): THREE.Mesh {
+type RingTarget = { readonly position: { readonly x: number; readonly z: number }; readonly size: { readonly w: number; readonly d: number } };
+
+function selectionRing(u: RingTarget): THREE.Mesh {
   const r = Math.max(u.size.w, u.size.d) * 0.63;
   const ring = new THREE.Mesh(
     new THREE.RingGeometry(r, r + 0.065, 64),
@@ -31,11 +35,11 @@ function selectionRing(u: UnitDef): THREE.Mesh {
  * Construye la ciudad completa en el orden de preview.html (el orden importa: la semilla
  * aleatoria reparte ventanas y árboles igual que en el HTML). Solo funciona en el navegador.
  */
-export function buildCampus(units: readonly UnitDef[], relations: readonly RelationDef[]) {
+export function buildCampus(units: readonly UnitDef[], relations: readonly RelationDef[], sites: readonly ProjectSite[] = []) {
   const b = createSceneBuilder();
   const { ringPath } = buildTerrain(b);
 
-  const rings = new Map<UnitId, THREE.Mesh>();
+  const rings = new Map<string, THREE.Mesh>();
   for (const u of units) {
     const { x, z } = u.position;
     const { w, d } = u.size;
@@ -48,7 +52,13 @@ export function buildCampus(units: readonly UnitDef[], relations: readonly Relat
   }
 
   buildParking(b);
-  buildBridge(b);
+  // Las obras no usan la semilla aleatoria: la ciudad queda igual con o sin proyectos.
+  buildProjectSites(b, sites);
+  for (const s of sites) {
+    const ring = selectionRing({ position: s.position, size: SITE_PLATFORM });
+    b.root.add(ring);
+    rings.set(s.id, ring);
+  }
   b.commit();
   const routes = buildRoutes(b, units, relations);
 
@@ -64,7 +74,10 @@ export function buildCampus(units: readonly UnitDef[], relations: readonly Relat
   }
 
   const cars = buildTraffic(b);
-  const labelAnchors = new Map(units.map((u) => [u.id, new THREE.Vector3(u.position.x, labelAnchorHeight(u), u.position.z)] as const));
+  const labelAnchors = new Map<string, THREE.Vector3>([
+    ...units.map((u) => [u.id, new THREE.Vector3(u.position.x, labelAnchorHeight(u), u.position.z)] as const),
+    ...sites.map((s) => [s.id, new THREE.Vector3(s.building.x, SITE_LABEL_HEIGHT, s.building.z)] as const),
+  ]);
 
   return {
     root: b.root,

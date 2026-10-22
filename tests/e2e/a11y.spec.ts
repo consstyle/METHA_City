@@ -24,13 +24,13 @@ test.describe('F3 · accesibilidad', () => {
 
   test('Leitstand', async ({ page }) => {
     await page.goto('/leitstand');
-    await expect(page.locator('[data-agent]')).toHaveCount(9);
+    await expect(page.locator('[data-agent]')).toHaveCount(13);
     expect(await seriousViolations(page)).toEqual([]);
   });
 
   test('Agenten (con una Freigabe pendiente)', async ({ page }) => {
     await page.goto('/agenten');
-    await expect(page.locator('[data-agent-card]')).toHaveCount(9);
+    await expect(page.locator('[data-agent-card]')).toHaveCount(13);
     await page.getByRole('button', { name: 'IT-Support anfordern' }).click();
     expect(await seriousViolations(page)).toEqual([]);
   });
