@@ -1,13 +1,16 @@
 import { CAMPUS_UNITS, ORCHESTRATOR_AGENT } from '@/features/city/model/campus';
+import { specialistById } from '@/features/city/model/specialists';
 import { format, type Messages } from '@/i18n';
 import type { ActivityEvent } from './contract';
 
 type TaskAgentId = keyof Messages['sim']['tasks'];
 
-/** Nombre visible de un agente: el orquestador por su nombre propio, las unidades por la suya. */
+/** Nombre visible de un agente: el orquestador por su nombre propio, unidades y especialistas por el suyo. */
 export function agentName(id: string | null, m: Messages): string {
   if (!id) return '';
   if (id === ORCHESTRATOR_AGENT) return m.agents.chief;
+  const role = specialistById(id);
+  if (role) return m.specialists[role.id].name;
   return CAMPUS_UNITS.find((u) => (u.agent ?? u.id) === id)?.name ?? id;
 }
 

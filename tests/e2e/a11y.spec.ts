@@ -27,4 +27,25 @@ test.describe('F3 · accesibilidad', () => {
     await expect(page.locator('[data-agent]')).toHaveCount(9);
     expect(await seriousViolations(page)).toEqual([]);
   });
+
+  test('Agenten (con una Freigabe pendiente)', async ({ page }) => {
+    await page.goto('/agenten');
+    await expect(page.locator('[data-agent-card]')).toHaveCount(9);
+    await page.getByRole('button', { name: 'IT-Support anfordern' }).click();
+    expect(await seriousViolations(page)).toEqual([]);
+  });
+
+  test('Perfil', async ({ page }) => {
+    await page.goto('/agenten/chief');
+    await expect(page.locator('#profile-title')).toBeVisible();
+    expect(await seriousViolations(page)).toEqual([]);
+  });
+
+  test('Chat (con una respuesta)', async ({ page }) => {
+    await page.goto('/chat?agent=bau');
+    await page.getByRole('textbox', { name: 'Nachricht' }).fill('Hallo');
+    await page.getByRole('button', { name: 'Senden' }).click();
+    await expect(page.locator('.bubble[data-role="agent"]')).toHaveCount(1, { timeout: 15_000 });
+    expect(await seriousViolations(page)).toEqual([]);
+  });
 });

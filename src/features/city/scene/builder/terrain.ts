@@ -2,15 +2,22 @@ import * as THREE from 'three';
 import { curve, ellipsePoints, type Point3, type SceneBuilder } from './builder';
 import { ORANGE } from './materials';
 
-const AVENUES: readonly (readonly Point3[])[] = [
+export const AVENUES: readonly (readonly Point3[])[] = [
   [[-20, 0.06, -1], [-14, 0.06, -1], [-7, 0.06, -5], [0, 0.06, -4], [5, 0.06, -1], [18, 0.06, 5]],
   [[2, 0.065, -13], [3, 0.065, -7], [4, 0.065, 0], [2, 0.065, 7], [0, 0.065, 14]],
   [[-20, 0.06, 8], [-14, 0.06, 8], [-9, 0.06, 5], [-1, 0.06, 5], [7, 0.06, 6], [15, 0.06, 10]],
 ];
 
-const TREES: readonly (readonly [number, number])[] = [
+export const TREES: readonly (readonly [number, number])[] = [
   [18, -7], [18.2, -5.5], [17.8, -4], [-10, -11.8], [-11.2, -11.5], [-12.3, -12], [-18.5, 9.4], [-17.3, 9.8],
   [4.6, 10.8], [5.5, 11.4], [-1.8, 9.4], [-1.3, 10.5], [6, -2], [6.5, -0.8], [6.2, 0.3], [-11, 5.7], [-10.1, 5.4], [-1, -5.8],
+];
+
+/** Plazas de las cabeceras: x, z, radio. */
+export const PLAZAS: readonly (readonly [number, number, number])[] = [[-6, -1, 4], [8.5, -8, 3.5]];
+/** Zonas ajardinadas: x, z, radio x, radio z. */
+export const GREENS: readonly (readonly [number, number, number, number])[] = [
+  [-11, -11.7, 2.2, 1.05], [-18, 9.6, 1.7, 1], [18, -6, 1.8, 3], [5, 11, 1.6, 1.25], [-1.6, 10, 1.1, 1.6],
 ];
 
 /** Isla, borde, anillo vial, avenidas, plazas, zonas verdes, árboles y farolas (orden de preview.html). */
@@ -50,15 +57,9 @@ export function buildTerrain(b: SceneBuilder): { ringPath: THREE.CatmullRomCurve
   }
 
   // Plazas circulares en las dos cabeceras y zonas ajardinadas irregulares
-  b.cylinder(-6, 0.06, -1, 4, 0.12, M.paving, 64);
-  b.cylinder(8.5, 0.06, -8, 3.5, 0.12, M.paving, 64);
+  for (const [x, z, r] of PLAZAS) b.cylinder(x, 0.06, z, r, 0.12, M.paving, 64);
   for (let i = 0; i < 3; i++) b.cylinder(3 + i * 0.25, 0.04, 6 + i * 0.45, 1.6 - i * 0.22, 0.12, M.soil, 40);
-  const grass = (x: number, z: number, rx: number, rz: number) => b.cylinder(x, 0.04, z, rx, 0.12, M.soil, 32, rx, rz / rx);
-  grass(-11, -11.7, 2.2, 1.05);
-  grass(-18, 9.6, 1.7, 1);
-  grass(18, -6, 1.8, 3);
-  grass(5, 11, 1.6, 1.25);
-  grass(-1.6, 10, 1.1, 1.6);
+  for (const [x, z, rx, rz] of GREENS) b.cylinder(x, 0.04, z, rx, 0.12, M.soil, 32, rx, rz / rx);
 
   const tree = (x: number, z: number, s: number) => {
     b.cylinder(x, 0.42 * s, z, 0.07 * s, 0.85 * s, M.bark, 6);

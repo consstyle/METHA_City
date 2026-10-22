@@ -2,6 +2,8 @@
  * Textkatalog der Oberfläche. MethaCity ist wie MethaDesk nur auf Deutsch (Schweizer
  * Schreibweise: «ss» statt «ß»). Fachliche Prüfung der Übersetzungen ausstehend.
  */
+import { deAgents, specialistTasks } from './de-agents';
+
 export const de = {
   app: {
     title: 'METHACity',
@@ -186,6 +188,7 @@ export const de = {
         'Erhalt der gelieferten Teile bestätigen',
         'Einsatz der Montageteams planen',
       ],
+      ...specialistTasks,
     },
   },
   legend: {
@@ -219,7 +222,6 @@ export const de = {
     nextMontage: 'Nächster Montagetermin',
     subunits: 'Untereinheiten',
     chat: 'Chat öffnen',
-    chatSoon: 'Der Chat folgt in Phase F4',
     summaryTitle: 'LEITSTAND',
     agentsWorking: '{n} von {total} Agenten arbeiten',
     approvalsPending: '{n} Freigaben ausstehend',
@@ -268,4 +270,5 @@ export const de = {
       description: 'Die Ausführung vor Ort. Untersteht der Bauleitung und ist als aktive Baustelle mit Rohbau, Kran und Containern dargestellt.',
     },
   },
+  ...deAgents,
 } as const;

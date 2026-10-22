@@ -5,7 +5,7 @@ Centro de control de agentes de METHABAU: una ciudad 3D donde cada edificio es u
 - **Plan:** `PLAN-DESARROLLO.md` y `PLAN-MethaCity.md` (carpeta `Methabau_Citi` en OneDrive).
 - **Referencia visual:** `Methabau_Citi/preview/preview.html`.
 - **Rumbo:** sistema operativo de agentes inspirado en NEXORA (plan v3, `PLAN-DESARROLLO.md`), con el MVP de frontend al final de F5.
-- **Fase actual:** F3 (sistema y ciudad viva): carril de módulos, etiquetas con estado de agente, vista Hierarchie, panel de unidad y agente, Leitstand con simulación determinista. Siguiente: F4 (agentes y chat).
+- **Fase actual:** F4 (agentes y chat): directorio y perfil de agentes, catálogo de 14 especialistas con Freigabe y pabellones en la ciudad, chat con respuestas simuladas en streaming. F3 (sistema y ciudad viva) en `f07b553`. Siguiente: F5 (misiones, tareas, Freigaben y actividad).
 
 > No ejecutes `npm run build` mientras corre `npm run dev`: ambos usan `.next`. Las pruebas e2e usan su propia carpeta.
 
@@ -46,17 +46,25 @@ Los 9 agentes (el orquestador «Methabau Chief» y uno por unidad) los mueve un 
 |---|---|---|
 | `/` | Stadt: ciudad 3D (o Hierarchie) y panel de unidad con su agente | F3 |
 | `/leitstand` | Leitstand: agentes, actividad, estado del sistema y alertas de MethaDesk | F3 |
-| — | Agenten, Chat · Missionen, Aufgaben, Freigaben, Aktivität | F4 · F5 (marcados «BALD») |
+| `/agenten`, `/agenten/[id]` | Agenten: directorio, catálogo de especialistas con sus Freigaben, perfil con instrucciones permanentes | F4 |
+| `/chat?agent=` | Chat con el Chief, las unidades y los especialistas contratados | F4 |
+| — | Missionen, Aufgaben, Freigaben, Aktivität | F5 (marcados «BALD») |
+
+## Datos guardados en el navegador
+Hasta B3 no hay base de datos propia: conversaciones, contrataciones e instrucciones permanentes se guardan en `localStorage` (`methacity.chat.v1`, `methacity.hiring.v1`, `methacity.agents.v1`), validadas con zod. Si están corruptas se descartan. Los adjuntos del chat **no se leen ni se suben**: solo se muestran nombre y tamaño. Para empezar de cero, borrar los datos del sitio en el navegador.
 
 ## Estructura
 ```
 src/
   app/(os)/                  armazón del sistema (cabecera, carril de módulos) y rutas de los módulos
-  app/os.css                 estilos del sistema (carril, etiquetas, jerarquía, panel, Leitstand)
+  app/os.css, modules.css    estilos del sistema (carril, etiquetas, jerarquía, panel, Leitstand) y de los módulos
   components/                cabecera, pestañas de vista, carril de módulos
-  os/                        contrato de agentes y actividad (zod), motor de simulación, store y proveedor
+  os/                        contrato (zod), motor de simulación y plantilla, contrataciones, stores y proveedor
+  os/chat/                   contrato del chat, respuestas guionizadas, streaming, AgentGateway y store
+  features/agents/           directorio, catálogo, Freigaben y perfil
+  features/chat/             módulo de chat (lista, hilo, caja de escritura)
   features/city/model/       campus.ts (8 unidades, posiciones de preview.html), jerarquía, departamentos
-  features/city/scene/       escena 3D: builder/, cámara, luz, balizas de agente, proyección de etiquetas
+  features/city/scene/       escena 3D: builder/, cámara, luz, balizas de agente, pabellones, proyección de etiquetas
   features/city/overlay/     etiquetas, Hierarchie, controles de cámara, barra de herramientas, leyenda
   features/city/state/       estado compartido escena ↔ panel (zustand)
   features/city/panel/       panel de unidad: agente, MethaDesk, árbol de estructura

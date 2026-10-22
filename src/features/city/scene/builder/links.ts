@@ -5,7 +5,7 @@ import { curve, type Point3, type SceneBuilder } from './builder';
 import { ORANGE } from './materials';
 
 /** Trazado de la pasarela elevada de coordinación entre Produktion / AVOR y Bauleitung. */
-const BRIDGE: readonly Point3[] = [[-3.5, 1.4, -0.15], [0.2, 1.4, 0.2], [5.5, 1.4, 0.6], [10.9, 1.4, 1]];
+export const BRIDGE: readonly Point3[] = [[-3.5, 1.4, -0.15], [0.2, 1.4, 0.2], [5.5, 1.4, 0.6], [10.9, 1.4, 1]];
 const COORDINATION_ROUTE: readonly Point3[] = [[-3.5, 2.08, -0.15], [1, 2.08, 0.2], [6, 2.08, 0.6], [10.9, 2.08, 1]];
 const COORD_COLOR = 0xe3d8bd;
 

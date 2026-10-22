@@ -44,7 +44,7 @@ test.describe('F3 · sistema y ciudad viva', () => {
     await openCity(page);
     await expect(page.locator('.cockpit-summary')).toContainText(/von 9/);
     await expect(page.locator('#agent-title')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Chat öffnen' })).toBeDisabled();
+    await expect(page.locator('.panel-section').getByRole('link', { name: 'Chat öffnen' })).toHaveAttribute('href', '/chat?agent=avor');
   });
 
   test('carril: Stadt ↔ Leitstand con agentes, actividad y estado del sistema', async ({ page }) => {
@@ -55,7 +55,7 @@ test.describe('F3 · sistema y ciudad viva', () => {
     await expect(page.locator('[data-agent]')).toHaveCount(9);
     await expect(page.locator('.stat')).toHaveCount(5);
     await expect(page.locator('[data-service="hermes"]')).toContainText('Nicht verbunden');
-    await expect(page.locator('.module-rail .rail-item.disabled')).toHaveCount(6);
+    await expect(page.locator('.module-rail .rail-item.disabled')).toHaveCount(4);
 
     const firstEvent = () => page.locator('.feed-item .feed-text').first().textContent();
     const before = await firstEvent();

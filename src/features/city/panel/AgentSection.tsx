@@ -1,11 +1,12 @@
 'use client';
 
+import Link from 'next/link';
 import type { Messages } from '@/i18n';
 import { relativeTimeDe } from '@/lib/relativeTime';
 import { taskText } from '@/os/format';
 import { useSim } from '@/os/OsProvider';
 
-/** Estado del agente de la unidad: qué hace, desde cuándo, y acceso al chat (F4). */
+/** Estado del agente de la unidad: qué hace, desde cuándo, y acceso a su perfil y al chat. */
 export function AgentSection({ m, agentId }: Readonly<{ m: Messages; agentId: string }>) {
   const sim = useSim();
   const agent = sim?.agents.find((a) => a.id === agentId);
@@ -32,10 +33,10 @@ export function AgentSection({ m, agentId }: Readonly<{ m: Messages; agentId: st
           </div>
         </dl>
       )}
-      <button type="button" className="ghost-btn" disabled aria-describedby="chat-soon">
-        {m.panel.chat}
-      </button>
-      <p id="chat-soon" className="muted hint">{m.panel.chatSoon}</p>
+      <div className="row-actions">
+        <Link className="ghost-btn small primary" href={`/chat?agent=${agentId}`}>{m.panel.chat}</Link>
+        <Link className="ghost-btn small" href={`/agenten/${agentId}`}>{m.directory.profile}</Link>
+      </div>
     </section>
   );
 }

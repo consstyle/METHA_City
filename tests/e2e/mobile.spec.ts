@@ -15,6 +15,17 @@ test('en el móvil la escena, los controles y el panel siguen disponibles', asyn
   await page.screenshot({ path: info.outputPath('methacity-mobile.png'), fullPage: true });
 });
 
+for (const path of ['/agenten', '/chat']) {
+  test(`en el móvil ${path} cabe en la pantalla`, async ({ page }, info) => {
+    await page.goto(path);
+    await expect(page.locator('main')).toBeVisible();
+    await page.waitForTimeout(500);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+    expect(overflow, 'sin desplazamiento horizontal').toBe(false);
+    await page.screenshot({ path: info.outputPath(`${path.slice(1)}-mobile.png`), fullPage: true });
+  });
+}
+
 test('en el móvil el Leitstand cabe en la pantalla', async ({ page }, info) => {
   await page.goto('/leitstand');
   await expect(page.locator('[data-agent]')).toHaveCount(9);

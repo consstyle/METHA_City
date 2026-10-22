@@ -13,7 +13,7 @@ import { Toolbar } from '@/features/city/overlay/Toolbar';
 import { useCity, useCityStoreApi } from '@/features/city/state/CityStoreProvider';
 import type { Messages } from '@/i18n';
 import { hasWebGL } from '@/lib/webgl';
-import { useOsStoreApi } from '@/os/OsProvider';
+import { useHiringStoreApi, useOsStoreApi } from '@/os/OsProvider';
 
 const CampusCanvas = dynamic(() => import('@/features/city/scene/CampusCanvas'), { ssr: false });
 
@@ -25,6 +25,7 @@ const pad2 = (n: number) => String(n).padStart(2, '0');
 export function CityStage({ m }: Readonly<{ m: Messages }>) {
   const store = useCityStoreApi();
   const osStore = useOsStoreApi();
+  const hiringStore = useHiringStoreApi();
   const view = useCity((s) => s.view);
   const [labels] = useState(createLabelRegistry);
   const [status, setStatus] = useState<Status>('loading');
@@ -49,6 +50,7 @@ export function CityStage({ m }: Readonly<{ m: Messages }>) {
         <CampusCanvas
           store={store}
           osStore={osStore}
+          hiringStore={hiringStore}
           labels={labels}
           label={m.scene.canvasLabel}
           onReady={() => setStatus((s) => (s === 'loading' ? 'ready' : s))}

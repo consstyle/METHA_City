@@ -19,8 +19,8 @@ interface RailItem {
 const ITEMS: readonly RailItem[] = [
   { key: 'city', href: '/', icon: 'm12 3 9 5-9 5-9-5Z M3 12l9 5 9-5 M3 16l9 5 9-5' },
   { key: 'cockpit', href: '/leitstand', icon: 'M3 13h8V3H3Z M13 21h8V11h-8Z M13 3v6h8V3Z M3 21h8v-6H3Z' },
-  { key: 'agents', href: null, phase: 'F4', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M4 21a8 8 0 0 1 16 0' },
-  { key: 'chat', href: null, phase: 'F4', icon: 'M4 5h16v11H9l-5 4Z' },
+  { key: 'agents', href: '/agenten', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M4 21a8 8 0 0 1 16 0' },
+  { key: 'chat', href: '/chat', icon: 'M4 5h16v11H9l-5 4Z' },
   { key: 'missions', href: null, phase: 'F5', icon: 'M5 21V4 M5 4h12l-2 4 2 4H5' },
   { key: 'tasks', href: null, phase: 'F5', icon: 'M4 4h5v16H4Z M10 4h5v10h-5Z M16 4h4v7h-4Z' },
   { key: 'approvals', href: null, phase: 'F5', icon: 'M4 12l5 5L20 6' },

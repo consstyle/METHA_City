@@ -7,6 +7,7 @@ import { useStore } from 'zustand';
 import { CAMPUS_UNITS } from '@/features/city/model/campus';
 import type { LabelRegistry } from '@/features/city/overlay/labelRegistry';
 import type { CityStore } from '@/features/city/state/cityStore';
+import type { HiringStore } from '@/os/hiringStore';
 import type { OsStore } from '@/os/osStore';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import { CameraRig } from './CameraRig';
@@ -17,6 +18,7 @@ import { Lighting, LocalEnvironment } from './Lighting';
 interface Props {
   readonly store: CityStore;
   readonly osStore: OsStore | null;
+  readonly hiringStore: HiringStore | null;
   readonly labels: LabelRegistry;
   readonly label: string;
   readonly onReady: () => void;
@@ -27,9 +29,13 @@ interface Props {
 function Diagnostics({ store }: Readonly<{ store: CityStore }>) {
   const gl = useThree((s) => s.gl);
   const camera = useThree((s) => s.camera);
+  const scene = useThree((s) => s.scene);
   useEffect(() => {
     window.__methacity = {
       renderInfo: () => ({ calls: gl.info.render.calls, triangles: gl.info.render.triangles }),
+      /** Pabellones en la escena: papel y si espera Freigabe. */
+      pavilions: () =>
+        (scene.getObjectByName('pavilions')?.children ?? []).map((g) => ({ role: String(g.userData.role), pending: Boolean(g.userData.pending) })),
       getState: () => {
         const { selected, view, options, camera: pose } = store.getState();
         return { selected, view, options, camera: pose };
@@ -46,19 +52,20 @@ function Diagnostics({ store }: Readonly<{ store: CityStore }>) {
     return () => {
       delete window.__methacity;
     };
-  }, [gl, camera, store]);
+  }, [gl, camera, scene, store]);
   return null;
 }
 
 interface SceneProps {
   readonly store: CityStore;
   readonly osStore: OsStore | null;
+  readonly hiringStore: HiringStore | null;
   readonly labels: LabelRegistry;
   readonly onReady: () => void;
   readonly reducedMotion: boolean;
 }
 
-function SceneContent({ store, osStore, labels, onReady, reducedMotion }: SceneProps) {
+function SceneContent({ store, osStore, hiringStore, labels, onReady, reducedMotion }: SceneProps) {
   const day = useStore(store, (s) => s.options.day);
   const gl = useThree((s) => s.gl);
   const frames = useRef(0);
@@ -82,7 +89,7 @@ function SceneContent({ store, osStore, labels, onReady, reducedMotion }: SceneP
     <>
       <LocalEnvironment />
       <Lighting day={day} />
-      <CampusWorld store={store} osStore={osStore} reducedMotion={reducedMotion} />
+      <CampusWorld store={store} osStore={osStore} hiringStore={hiringStore} reducedMotion={reducedMotion} />
       <CameraRig store={store} reducedMotion={reducedMotion} />
       <LabelProjector store={store} registry={labels} />
       <Diagnostics store={store} />
@@ -91,7 +98,7 @@ function SceneContent({ store, osStore, labels, onReady, reducedMotion }: SceneP
 }
 
 /** Lienzo WebGL de la ciudad. Se carga solo en el cliente (`next/dynamic` con ssr: false). */
-export default function CampusCanvas({ store, osStore, labels, label, onReady, onContextLost }: Props) {
+export default function CampusCanvas({ store, osStore, hiringStore, labels, label, onReady, onContextLost }: Props) {
   const reducedMotion = useReducedMotion();
   // En la vista Hierarchie la escena queda oculta: se detiene el bucle de dibujo.
   const paused = useStore(store, (s) => s.view !== 'city');
@@ -117,7 +124,7 @@ export default function CampusCanvas({ store, osStore, labels, label, onReady, o
         });
       }}
     >
-      <SceneContent store={store} osStore={osStore} labels={labels} onReady={onReady} reducedMotion={reducedMotion} />
+      <SceneContent store={store} osStore={osStore} hiringStore={hiringStore} labels={labels} onReady={onReady} reducedMotion={reducedMotion} />
     </Canvas>
   );
 }

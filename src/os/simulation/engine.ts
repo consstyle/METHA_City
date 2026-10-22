@@ -14,7 +14,8 @@ export const TASKS_PER_AGENT = 4;
 
 export interface SimAgent {
   readonly id: string;
-  readonly kind: 'orchestrator' | 'unit';
+  readonly kind: 'orchestrator' | 'unit' | 'specialist';
+  /** Unidad propia (agente de unidad) o a la que sirve (especialista). */
   readonly unitId: UnitId | null;
   readonly state: 'idle' | 'working' | 'waiting';
   readonly taskIndex: number | null;
@@ -55,14 +56,24 @@ function random(seed: number, tick: number): () => number {
   };
 }
 
-/** A quién puede delegar un agente: el orquestador a las cabeceras; una unidad a sus hijas y a su enlace de coordinación. */
-export function delegationTargets(agentId: string, relations: readonly RelationDef[]): string[] {
+/** Enlace de delegación fuera del modelo de la ciudad (unidad → especialista contratado). */
+export interface DelegationLink {
+  readonly from: string;
+  readonly to: string;
+}
+
+/**
+ * A quién puede delegar un agente: el orquestador a las cabeceras; una unidad a sus hijas, a su
+ * enlace de coordinación y a sus especialistas.
+ */
+export function delegationTargets(agentId: string, relations: readonly RelationDef[], links: readonly DelegationLink[] = []): string[] {
   if (agentId === ORCHESTRATOR_AGENT) return CAMPUS_UNITS.filter((u) => u.parent === null).map((u) => u.id);
-  return relations.flatMap((r) => {
+  const city = relations.flatMap((r) => {
     if (r.kind === 'hierarchy') return r.from === agentId ? [r.to] : [];
     if (r.from === agentId) return [r.to];
     return r.to === agentId ? [r.from] : [];
   });
+  return [...city, ...links.filter((l) => l.from === agentId).map((l) => l.to)];
 }
 
 export function createSimulation(seed: number, now: Date): SimState {
@@ -74,7 +85,7 @@ export function createSimulation(seed: number, now: Date): SimState {
   return { seed, tick: 0, now: now.toISOString(), agents, activity: [], tasksOpen: 0, approvalsPending: 0, missionsRunning: 0 };
 }
 
-export function step(state: SimState, now: Date, relations: readonly RelationDef[]): SimState {
+export function step(state: SimState, now: Date, relations: readonly RelationDef[], links: readonly DelegationLink[] = []): SimState {
   const tick = state.tick + 1;
   const rnd = random(state.seed, tick);
   const at = now.toISOString();
@@ -111,7 +122,7 @@ export function step(state: SimState, now: Date, relations: readonly RelationDef
   if (available.length > 0 && rnd() < 0.7) {
     const chosen = available[Math.floor(rnd() * available.length)] as SimAgent;
     emit('started', chosen.id, null, start(chosen.id));
-    const targets = delegationTargets(chosen.id, relations).filter((t) =>
+    const targets = delegationTargets(chosen.id, relations, links).filter((t) =>
       agents.some((a) => a.id === t && a.state === 'idle' && a.since !== tick),
     );
     if (targets.length > 0 && rnd() < 0.6) {

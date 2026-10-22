@@ -29,3 +29,16 @@ test('tick avanza un paso y avisa a los suscriptores', () => {
   assert.equal(store.getState().sim.tick, 1);
   assert.equal(calls, 1);
 });
+
+test('syncSpecialists añade y quita especialistas según las contrataciones activas', () => {
+  const store = createOsStore({ now: () => NOW });
+  store.getState().syncSpecialists(['bim', 'it']);
+  const ids = () => store.getState().sim.agents.filter((a) => a.kind === 'specialist').map((a) => a.id);
+  assert.deepEqual(ids(), ['bim', 'it']);
+  assert.deepEqual(store.getState().specialists, ['bim', 'it']);
+  const before = store.getState().sim;
+  store.getState().syncSpecialists(['it', 'bim']);
+  assert.equal(store.getState().sim, before, 'sin cambios no se notifica');
+  store.getState().syncSpecialists(['it']);
+  assert.deepEqual(ids(), ['it']);
+});
