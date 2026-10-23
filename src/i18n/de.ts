@@ -215,7 +215,7 @@ export const de = {
   },
   legend: {
     hierarchy: 'HIERARCHISCHE ABHÄNGIGKEIT',
-    sites: 'STRASSE ZU DEN BAUSTELLEN',
+    sites: 'DIREKTE STRASSEN AB PRODUKTION / AVOR',
     ts: 'TS UNTERWEGS AUF DEN STRASSEN',
     drag: 'ZIEHEN ZUM DREHEN',
     wheel: 'MAUSRAD ZUM ZOOMEN',

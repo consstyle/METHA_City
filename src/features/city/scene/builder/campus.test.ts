@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { CAMPUS_UNITS } from '@/features/city/model/campus';
 import { deriveRelations, labelAnchorHeight } from '@/features/city/model/hierarchy';
 import { layoutSites } from '@/features/city/model/projects';
+import { distanceToSegment, ROAD_HALF, roadSegments } from '@/features/city/model/streets';
 import { buildCampus } from './campus';
 import { applyDaylight, createMaterials } from './materials';
 
@@ -74,10 +75,25 @@ test('cada obra se puede seleccionar, tiene su anillo y su etiqueta, y va instan
   campus.dispose();
 });
 
-test('el tráfico son 3 vehículos que no proyectan sombra (las sombras son estáticas)', () => {
+test('sin tráfico de adorno: los únicos vehículos en movimiento son los camiones de TS', () => {
   const campus = build();
-  assert.equal(campus.cars.length, 3);
-  assert.ok(campus.cars.every((car) => meshes(car).every((m) => !m.castShadow)));
+  assert.equal('cars' in campus, false);
+  campus.dispose();
+});
+
+/** Copas de los árboles: la forma icosaedro instanciada del terreno. */
+const crowns = (root: THREE.Object3D) => meshes(root)
+  .filter((m): m is THREE.InstancedMesh => m instanceof THREE.InstancedMesh && m.geometry instanceof THREE.IcosahedronGeometry)
+  .reduce((n, m) => n + m.count, 0);
+
+test('si la calle de una obra tiene que pasar por un árbol, el árbol no se dibuja (nada de jardines en las calles)', () => {
+  const plain = build();
+  const [site] = layoutSites([{ projektId: 'a', projektnummer: 'DEV-001', projektname: 'A' }]);
+  // Calle forzada sobre los árboles junto a Planer (6, -2), (6.5, -0.8) y (6.2, 0.3).
+  const through = { ...site!, road: [{ x: 0, z: -0.8 }, { x: 30, z: -0.8 }] };
+  const campus = buildCampus(CAMPUS_UNITS, deriveRelations(CAMPUS_UNITS), [through]);
+  assert.equal(crowns(plain.root) - crowns(campus.root), 3);
+  plain.dispose();
   campus.dispose();
 });
 
@@ -125,4 +141,27 @@ test('dispose libera la geometría sin errores y se puede repetir la construcci�
   const campus = build();
   assert.doesNotThrow(() => campus.dispose());
   assert.doesNotThrow(() => build().dispose());
+});
+
+/** Postes de las farolas: cilindros de 6 caras de acero oscuro (terrain.ts → buildLamps). */
+function lampPoles(campus: ReturnType<typeof buildCampus>): { x: number; z: number }[] {
+  const poles = meshes(campus.root).filter((m): m is THREE.InstancedMesh => m instanceof THREE.InstancedMesh
+    && m.geometry instanceof THREE.CylinderGeometry && m.geometry.parameters.radialSegments === 6 && m.material === campus.materials.darkSteel);
+  const matrix = new THREE.Matrix4();
+  const p = new THREE.Vector3();
+  return poles.flatMap((m) => Array.from({ length: m.count }, (_, i) => {
+    m.getMatrixAt(i, matrix);
+    p.setFromMatrixPosition(matrix);
+    return { x: p.x, z: p.z };
+  }));
+}
+
+test('hay farolas en las calles del campus y ninguna en medio de la calle de una obra', () => {
+  const sites = layoutSites(['DEV-001', 'DEV-002', 'DEV-003'].map((nr, i) => ({ projektId: `p${i}`, projektnummer: nr, projektname: nr })));
+  const campus = buildCampus(CAMPUS_UNITS, deriveRelations(CAMPUS_UNITS), sites);
+  const poles = lampPoles(campus);
+  assert.ok(poles.length > 3);
+  const roads = sites.flatMap((s) => roadSegments(s.road));
+  for (const pole of poles) assert.ok(roads.every(([a, b]) => distanceToSegment(pole, a, b) >= ROAD_HALF), `farola en (${pole.x.toFixed(1)}, ${pole.z.toFixed(1)})`);
+  campus.dispose();
 });

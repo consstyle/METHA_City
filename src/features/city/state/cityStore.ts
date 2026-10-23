@@ -3,7 +3,7 @@ import { CAMPUS_UNITS } from '@/features/city/model/campus';
 import { unitById } from '@/features/city/model/hierarchy';
 import { layoutSites, parseSiteId, type ProjectRef, type ProjectSite } from '@/features/city/model/projects';
 import {
-  CAMERA_DEFAULTS, FOCUS_ZOOM, TOP_VIEW_PITCH, clampPitch, clampZoom, focusTargetFor, sceneExtent, type CameraPose,
+  CAMERA_DEFAULTS, FOCUS_ZOOM, REFERENCE_ASPECT, TOP_VIEW_PITCH, clampPitch, clampZoom, focusTargetFor, sceneExtent, type CameraPose,
 } from '@/features/city/scene/camera/cameraMath';
 
 export type CityView = 'city' | 'hierarchy';
@@ -25,6 +25,8 @@ export interface CityState {
   readonly camera: CameraState;
   /** Obras de los proyectos activos alrededor de la isla (F5c). */
   readonly sites: readonly ProjectSite[];
+  /** Proporción ancho/alto del escenario 3D (la fija la cámara): el encuadre depende de ella. */
+  readonly aspect: number;
   select(id: string): void;
   setView(view: CityView): void;
   toggle(option: CityOption): void;
@@ -39,6 +41,7 @@ export interface CityState {
   reset(): void;
   /** Coloca las obras de los proyectos; no cambia nada si la lista de proyectos es la misma. */
   setSites(projects: readonly ProjectRef[]): void;
+  setAspect(aspect: number): void;
 }
 
 const INITIAL_CAMERA: CameraState = { ...CAMERA_DEFAULTS, topView: false, focus: null };
@@ -51,7 +54,10 @@ const sameProjects = (sites: readonly ProjectSite[], projects: readonly ProjectR
   && projects.every((p) => sites.some((s) => s.projektId === p.projektId && s.projektnummer === p.projektnummer && s.projektname === p.projektname));
 
 /** Factor de encuadre por las obras (ver sceneExtent): agranda la vista y el zoom máximo. */
-export const extentOf = (state: Pick<CityState, 'sites'>) => sceneExtent(state.sites.map((s) => s.position));
+export const extentOf = (state: Pick<CityState, 'sites' | 'aspect'>) => sceneExtent(state.sites.map((s) => s.position), state.aspect);
+
+/** Cambios de proporción por debajo de esto no recalculan el encuadre. */
+const ASPECT_STEP = 0.01;
 
 /** Destino de enfoque de una unidad o de una obra; null si el id no existe. */
 function focusable(id: string, sites: readonly ProjectSite[]) {
@@ -73,6 +79,7 @@ export function createCityStore() {
       options: { auto: false, links: true, tags: true, day: false, flow: true },
       camera: INITIAL_CAMERA,
       sites: [],
+      aspect: REFERENCE_ASPECT,
 
       select: (id) => {
         const target = focusable(id, get().sites);
@@ -104,6 +111,10 @@ export function createCityStore() {
       reset: () => {
         options({ auto: false });
         set({ camera: INITIAL_CAMERA });
+      },
+      setAspect: (aspect) => {
+        if (!Number.isFinite(aspect) || aspect <= 0 || Math.abs(aspect - get().aspect) < ASPECT_STEP) return;
+        set({ aspect });
       },
       setSites: (projects) => {
         if (sameProjects(get().sites, projects)) return;

@@ -23,7 +23,9 @@ export function CameraRig({ store, reducedMotion }: Props) {
   const gl = useThree((s) => s.gl);
   const pose = useRef({ yaw: CAMERA_DEFAULTS.yaw, pitch: CAMERA_DEFAULTS.pitch, zoom: CAMERA_DEFAULTS.zoom, target: new THREE.Vector3(...CAMERA_DEFAULTS.target) });
   const wanted = useRef(new THREE.Vector3());
-  // Un número: el selector solo provoca render cuando cambian las obras.
+  // La proporción real del escenario va al estado: encuadre, zoom máximo y enfoque usan el mismo factor.
+  const aspect = size.width / Math.max(1, size.height);
+  useEffect(() => store.getState().setAspect(aspect), [store, aspect]);
   const extent = useStore(store, extentOf);
 
   useFrame((_, delta) => {
@@ -38,7 +40,7 @@ export function CameraRig({ store, reducedMotion }: Props) {
     p.zoom += (c.zoom - p.zoom) * k;
     p.target.lerp(wanted.current.set(...c.target), k);
 
-    const f = frustum(size.width / Math.max(1, size.height), p.zoom, extent);
+    const f = frustum(aspect, p.zoom, extent);
     camera.left = f.left;
     camera.right = f.right;
     camera.top = f.top;

@@ -1,10 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CAMPUS_UNITS } from '@/features/city/model/campus';
+import { layoutSites, SITE_PLATFORM } from '@/features/city/model/projects';
+import { CAMPUS_STREETS, distanceToSegment } from '@/features/city/model/streets';
 import type { UnitId } from '@/features/city/model/types';
 import { FLOW_PAIRS } from '@/features/city/flow/tsFlow';
-import { layoutSites, SITE_PLATFORM } from '@/features/city/model/projects';
-import { buildRoadGraph, despike, LANE_OFFSET, routeBetween, routeToSite } from './roads';
+import { LANE_OFFSET, lanePath, routeBetween, routeToSite } from './roads';
 
 const unit = (id: UnitId) => CAMPUS_UNITS.find((u) => u.id === id)!;
 const inside = (x: number, z: number, id: UnitId, margin = 0) => {
@@ -12,58 +13,32 @@ const inside = (x: number, z: number, id: UnitId, margin = 0) => {
   return Math.abs(x - u.position.x) < u.size.w / 2 + margin && Math.abs(z - u.position.z) < u.size.d / 2 + margin;
 };
 
-test('la red de calles está conectada: desde cualquier nodo se llega a todos', () => {
-  const graph = buildRoadGraph();
-  const seen = new Set<number>([0]);
-  const todo = [0];
-  while (todo.length) for (const [next] of graph.adjacency[todo.pop()!] ?? []) if (!seen.has(next)) { seen.add(next); todo.push(next); }
-  assert.equal(seen.size, graph.nodes.length);
-  assert.ok(graph.nodes.length > 80);
-});
-
-test('hay ruta para cada movimiento del ciclo de TS, de puerta a puerta', () => {
+test('cada movimiento del ciclo de TS es una sola calle recta, de puerta a puerta', () => {
   for (const [from, to] of FLOW_PAIRS) {
     const path = routeBetween(unit(from), unit(to));
-    assert.ok(path && path.length >= 3, `${from} → ${to}`);
+    assert.ok(path && path.length === 2, `${from} → ${to}`);
     const [x0, z0] = path[0]!;
-    const [x1, z1] = path.at(-1)!;
+    const [x1, z1] = path[1]!;
     assert.ok(inside(x0, z0, from, 1.6), `${from}: sale de su edificio (${x0.toFixed(1)}, ${z0.toFixed(1)})`);
     assert.ok(inside(x1, z1, to, 1.6), `${to}: llega a su edificio`);
+    // Va por su calle: a un carril del eje.
+    const street = CAMPUS_STREETS.find((s) => s.id === (from === 'avor' ? to : from))!;
+    for (const [x, z] of path) assert.ok(Math.abs(distanceToSegment({ x, z }, street.from, street.to) - LANE_OFFSET) < 1e-6);
   }
 });
 
-test('las rutas no atraviesan otros edificios (también entre puntos)', () => {
+test('las rutas no atraviesan otros edificios', () => {
   for (const [from, to] of FLOW_PAIRS) {
     const path = routeBetween(unit(from), unit(to))!;
-    for (let i = 1; i < path.length; i++) {
-      const [ax, az] = path[i - 1]!;
-      const [bx, bz] = path[i]!;
-      for (let s = 0; s <= 10; s++) {
-        const x = ax + ((bx - ax) * s) / 10;
-        const z = az + ((bz - az) * s) / 10;
-        for (const other of CAMPUS_UNITS) {
-          if (other.id === from || other.id === to) continue;
-          assert.ok(!inside(x, z, other.id, 0.2), `${from} → ${to} pasa por ${other.id} en (${x.toFixed(1)}, ${z.toFixed(1)})`);
-        }
+    const [ax, az] = path[0]!;
+    const [bx, bz] = path[1]!;
+    for (let s = 0; s <= 40; s++) {
+      const x = ax + ((bx - ax) * s) / 40;
+      const z = az + ((bz - az) * s) / 40;
+      for (const other of CAMPUS_UNITS) {
+        if (other.id === from || other.id === to) continue;
+        assert.ok(!inside(x, z, other.id, 0.2), `${from} → ${to} pasa por ${other.id}`);
       }
-    }
-  }
-});
-
-test('sin medias vueltas por la calle: ningún giro interior de más de 120°', () => {
-  for (const [from, to] of FLOW_PAIRS) {
-    const path = routeBetween(unit(from), unit(to))!;
-    for (let i = 3; i < path.length - 3; i++) {
-      const [ax, az] = path[i - 1]!;
-      const [bx, bz] = path[i]!;
-      const [cx, cz] = path[i + 1]!;
-      const u = [bx - ax, bz - az];
-      const v = [cx - bx, cz - bz];
-      const lu = Math.hypot(u[0]!, u[1]!);
-      const lv = Math.hypot(v[0]!, v[1]!);
-      if (lu < 1e-6 || lv < 1e-6) continue;
-      const cos = (u[0]! * v[0]! + u[1]! * v[1]!) / (lu * lv);
-      assert.ok(cos > Math.cos((120 * Math.PI) / 180), `${from} → ${to}: giro de ${((Math.acos(cos) * 180) / Math.PI).toFixed(0)}° en el punto ${i}`);
     }
   }
 });
@@ -71,47 +46,30 @@ test('sin medias vueltas por la calle: ningún giro interior de más de 120°', 
 test('ida y vuelta circulan por carriles distintos (circulación por la derecha)', () => {
   const go = routeBetween(unit('avor'), unit('schlosserei'))!;
   const back = routeBetween(unit('schlosserei'), unit('avor'))!;
-  const mid = go[Math.floor(go.length / 2)]!;
-  const nearest = Math.min(...back.map(([x, z]) => Math.hypot(x - mid[0], z - mid[1])));
-  assert.ok(nearest > LANE_OFFSET, `los carriles se separan (${nearest.toFixed(2)})`);
+  const gap = Math.hypot(go[0]![0] - back[1]![0], go[0]![1] - back[1]![1]);
+  assert.ok(Math.abs(gap - 2 * LANE_OFFSET) < 1e-6, `los carriles se separan (${gap.toFixed(2)})`);
 });
 
-test('despike quita las medias vueltas y deja intactas las curvas normales', () => {
-  assert.deepEqual(despike([[0, 0], [2, 0], [1.6, 0.1], [1.6, 3]]), [[0, 0], [1.6, 0.1], [1.6, 3]]);
-  assert.deepEqual(despike([[0, 0], [1, 0], [2, 1], [2, 3]]), [[0, 0], [1, 0], [2, 1], [2, 3]]);
-  assert.deepEqual(despike([[0, 0], [0, 0], [1, 0]]), [[0, 0], [1, 0]], 'puntos repetidos');
-});
-
-test('las rutas se reutilizan (caché) y una unidad consigo misma no tiene ruta', () => {
-  assert.equal(routeBetween(unit('avor'), unit('werkhof')), routeBetween(unit('avor'), unit('werkhof')));
+test('todas las calles salen de AVOR: entre dos edificios cualesquiera no hay ruta directa', () => {
+  assert.equal(routeBetween(unit('schlosserei'), unit('blech')), null);
   assert.equal(routeBetween(unit('avor'), unit('avor')), null);
 });
 
-const SITES = layoutSites([
-  { projektId: 'a', projektnummer: 'DEV-001', projektname: 'A' },
-  { projektId: 'b', projektnummer: 'DEV-002', projektname: 'B' },
-  { projektId: 'c', projektnummer: 'DEV-003', projektname: 'C' },
-  { projektId: 'd', projektnummer: 'DEV-004', projektname: 'D' },
-]);
-
-test('hay ruta de AVOR a cada obra: por las calles y la carretera de la obra hasta su plataforma', () => {
-  for (const site of SITES) {
+test('de AVOR a cada obra por su calle, hasta dentro de la plataforma; desde otro edificio, no', () => {
+  for (const site of layoutSites([1, 2, 3, 4].map((i) => ({ projektId: `${i}`, projektnummer: `DEV-00${i}`, projektname: `P${i}` })))) {
     const path = routeToSite(unit('avor'), site);
-    assert.ok(path && path.length >= 4, site.id);
+    assert.ok(path && path.length === site.road.length + 1, site.id);
     const [x0, z0] = path[0]!;
     assert.ok(inside(x0, z0, 'avor', 1.6), 'sale de AVOR');
     const [x1, z1] = path.at(-1)!;
-    const out = Math.hypot(x1 - site.position.x, z1 - site.position.z);
-    assert.ok(out < SITE_PLATFORM.d / 2, `${site.id}: termina dentro de la plataforma (${out.toFixed(2)})`);
-    for (let i = 1; i < path.length; i++) {
-      const [ax, az] = path[i - 1]!;
-      const [bx, bz] = path[i]!;
-      for (let s = 0; s <= 10; s++) {
-        const [x, z] = [ax + ((bx - ax) * s) / 10, az + ((bz - az) * s) / 10];
-        for (const other of CAMPUS_UNITS) if (other.id !== 'avor') assert.ok(!inside(x, z, other.id, 0.2), `${site.id} pasa por ${other.id}`);
-      }
-    }
+    assert.ok(Math.hypot(x1 - site.position.x, z1 - site.position.z) < SITE_PLATFORM.d / 2, `${site.id}: termina dentro de la plataforma`);
+    assert.equal(routeToSite(unit('werkhof'), site), null);
   }
-  const site = SITES[0]!;
-  assert.equal(routeToSite(unit('avor'), site), routeToSite(unit('avor'), site), 'caché');
+});
+
+test('el carril de una ruta con esquina se desplaza con inglete y sin dispararse', () => {
+  const lane = lanePath([[0, 0], [10, 0], [10, 10]], 1);
+  assert.deepEqual(lane[0], [0, 1]);
+  assert.ok(Math.hypot(lane[1]![0] - 10, lane[1]![1]) <= 2 + 1e-9);
+  assert.deepEqual(lanePath([[0, 0]], 1), [[0, 0]]);
 });

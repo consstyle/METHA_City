@@ -1,4 +1,4 @@
-/** Contorno ondulado de la isla y de sus anillos (preview.html `ellipsePoints`), sin dependencias de three. */
+/** Contorno ondulado de la isla (preview.html `ellipsePoints`), sin dependencias de three. */
 
 /** Factor de ondulación del borde según el ángulo. */
 export function islandWobble(angle: number): number {
@@ -11,6 +11,24 @@ export function wobblyEllipsePoint(rx: number, rz: number, angle: number): { x: 
   return { x: Math.cos(angle) * rx * f, z: Math.sin(angle) * rz * f };
 }
 
-/** Radios de la isla y del anillo vial (terrain.ts). */
+/** Radios de la isla (terrain.ts). */
 export const ISLAND = { rx: 24.4, rz: 16.3 } as const;
-export const RING_ROAD = { rx: 22.3, rz: 14.4 } as const;
+
+/** true si el punto queda dentro de la isla, al menos a `margin` metros de su borde. */
+export function insideIsland(p: { x: number; z: number }, margin = 0): boolean {
+  const a = Math.atan2(p.z / ISLAND.rz, p.x / ISLAND.rx);
+  const edge = wobblyEllipsePoint(ISLAND.rx, ISLAND.rz, a);
+  return Math.hypot(p.x, p.z) + margin < Math.hypot(edge.x, edge.z);
+}
+
+/**
+ * Punto donde el segmento a→b (a dentro de la isla, b fuera) cruza el borde de la isla, como
+ * fracción de su longitud (1 si no lo cruza). Para el tramo sobre pilares de las calles de obra.
+ */
+export function islandExit(a: { x: number; z: number }, b: { x: number; z: number }, steps = 400): number {
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps;
+    if (!insideIsland({ x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t })) return (i - 1) / steps;
+  }
+  return 1;
+}

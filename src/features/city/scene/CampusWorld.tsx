@@ -25,7 +25,7 @@ interface Props {
 }
 
 const CLICK_TOLERANCE_PX = 4;
-/** Velocidad de los puntos de las rutas y del tráfico (preview.html: t · 0,00007 por ms). */
+/** Velocidad de los puntos de las rutas (preview.html: t · 0,00007 por ms). */
 const CLOCK_SPEED = 0.07;
 
 const pickId = (e: ThreeEvent<PointerEvent | MouseEvent>): string | undefined =>
@@ -63,13 +63,6 @@ export function CampusWorld({ store, osStore, hiringStore, flow, reducedMotion }
         dot.position.copy(a.curve.getPoint(dotProgress(clock, j, a.dots.length, k, a.relation.kind === 'coordination')));
       }),
     );
-    campus.cars.forEach((car, i) => {
-      const f = (clock * 0.28 + i * 0.33) % 1;
-      const p = campus.ringPath.getPoint(f);
-      const v = campus.ringPath.getTangent(f);
-      car.position.set(p.x, 0.14, p.z);
-      car.rotation.y = Math.atan2(v.x, v.z);
-    });
   });
 
   const setCursor = (id: string | null) => {

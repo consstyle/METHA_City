@@ -76,6 +76,8 @@ test.describe('F2 · escena 3D', () => {
   });
 
   test('barra de herramientas y controles de cámara', async ({ page }) => {
+    // Ocho clics sobre la escena: con WebGL por software (SwiftShader) cada uno espera fotogramas estables.
+    test.slow();
     await openCity(page);
     await page.getByRole('button', { name: 'Abendlicht' }).click();
     await expect(page.getByRole('button', { name: 'Tageslicht' })).toHaveAttribute('aria-pressed', 'true');

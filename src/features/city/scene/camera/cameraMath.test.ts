@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CAMERA_DEFAULTS, LIMITS, applyDrag, applyPinch, applyWheel, blendFactor, clampPitch, clampZoom,
-  ISLAND_REACH, focusTargetFor, frustum, orbitPosition, sceneExtent,
+  REFERENCE_ASPECT, fitFactor, focusTargetFor, frustum, orbitPosition, sceneExtent,
 } from './cameraMath';
 
 const close = (a: number, b: number, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} ≉ ${b}`);
@@ -63,13 +63,25 @@ test('el enfoque apunta al edificio a un 35 % de su altura', () => {
   assert.deepEqual(focusTargetFor({ position: { x: -6, z: -1 }, size: { h: 8.8 } }), [-6, 8.8 * 0.35, -1]);
 });
 
-test('con obras alrededor de la isla el encuadre y el zoom máximo crecen en la misma proporción', () => {
+test('el encuadre solo se abre lo justo para ver las obras, y el zoom máximo crece igual', () => {
   assert.equal(sceneExtent([]), 1);
-  assert.equal(sceneExtent([{ x: 5, z: 5 }]), 1, 'cerca del centro no hace falta agrandar');
-  const extent = sceneExtent([{ x: -40, z: 0 }, { x: 10, z: 20 }]);
-  close(extent, (40 + 9) / ISLAND_REACH);
-  close(frustum(2, 1, extent).right, frustum(2, 1).right * extent);
-  assert.equal(clampZoom(10, extent), LIMITS.zoomMax * extent);
-  assert.equal(applyWheel(LIMITS.zoomMax, -2000, extent), Math.min(LIMITS.zoomMax * Math.exp(2), LIMITS.zoomMax * extent));
-  assert.equal(applyPinch(1, 100, 1000, extent), LIMITS.zoomMax * extent);
+  assert.equal(sceneExtent([{ x: 0, z: -24 }]), 1, 'detrás de la isla (arriba en pantalla) cabe sin abrir');
+  const left = sceneExtent([{ x: -60, z: 0 }]);
+  assert.ok(left > 1.5, 'muy a la izquierda hay que abrir');
+  assert.ok(sceneExtent([{ x: -60, z: 0 }], 2.5) < left, 'en una pantalla ancha, menos');
+  close(frustum(2, 1, left).right, frustum(2, 1).right * left);
+  assert.equal(clampZoom(10, left), LIMITS.zoomMax * left);
+  assert.equal(applyWheel(LIMITS.zoomMax, -2000, left), Math.min(LIMITS.zoomMax * Math.exp(2), LIMITS.zoomMax * left));
+  assert.equal(applyPinch(1, 100, 1000, left), LIMITS.zoomMax * left);
+});
+
+test('fitFactor proyecta como la cámara por defecto y deja libre la zona del título', () => {
+  const f = frustum(REFERENCE_ASPECT, 1);
+  close(fitFactor({ x: 0, y: 0.3, z: 0 }), 0, 1e-9);
+  // Un punto en el borde derecho del encuadre (sobre la línea del centro) necesita 1 / margen lateral.
+  const yaw = 0.18;
+  const edge = { x: f.right * Math.cos(yaw), y: 0.3, z: -f.right * Math.sin(yaw) };
+  close(fitFactor(edge), 1 / 0.93, 1e-9);
+  const titleSpot = { x: -0.6 * f.right * Math.cos(yaw), y: 0.3 + (0.6 * f.top) / Math.cos(0.66), z: 0.6 * f.right * Math.sin(yaw) };
+  assert.ok(fitFactor(titleSpot) > 1, 'bajo el título no se considera visible');
 });

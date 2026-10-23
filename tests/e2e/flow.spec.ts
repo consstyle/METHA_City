@@ -27,7 +27,7 @@ test.describe('Flujo de Teilsysteme en la ciudad', () => {
     await openCity(page);
     await expect.poll(async () => (await flow(page)).emitted, { timeout: 20_000 }).toBeGreaterThanOrEqual(2);
     await page.locator('.module-rail').getByRole('link', { name: 'Leitstand' }).click();
-    await expect(page).toHaveURL(/leitstand/);
+    await expect(page).toHaveURL(/leitstand/, { timeout: 15_000 }); // con WebGL por software el hilo principal va lento
     await page.locator('.module-rail').getByRole('link', { name: 'Stadt' }).click();
     await page.waitForSelector('html[data-city-ready="true"]', { timeout: 45_000 });
     await expect.poll(async () => (await flow(page)).emitted, { timeout: 20_000 }).toBeGreaterThanOrEqual(2);
@@ -38,6 +38,8 @@ test.describe('Flujo de Teilsysteme en la ciudad', () => {
   });
 
   test('tras pasar por Hierarchie nunca hay dos camiones con el mismo TS', async ({ page }) => {
+    // Casi 30 s de esperas fijas a propósito, más los clics con WebGL por software.
+    test.slow();
     await openCity(page);
     await expect.poll(async () => (await flow(page)).active.length, { timeout: 20_000 }).toBeGreaterThanOrEqual(1);
     await page.getByRole('button', { name: 'Hierarchie' }).click();

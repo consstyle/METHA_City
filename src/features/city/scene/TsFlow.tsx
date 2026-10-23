@@ -30,6 +30,9 @@ declare global {
 }
 
 const unitById = (id: string) => CAMPUS_UNITS.find((u) => u.id === id);
+/** Paso máximo (s) del movimiento de los camiones y del reloj de salidas por fotograma. */
+const MAX_MOVE_STEP = 0.2;
+const MAX_CLOCK_STEP = 0.5;
 
 /**
  * Rutas de todos los movimientos del ciclo, calculadas una vez por lista de obras (no dentro del
@@ -109,10 +112,13 @@ export function TsFlow({ store, flowStore, tags, tagLabel, materials }: Props) {
     const { options, view } = store.getState();
     const on = options.flow && view === 'city';
     meshes.group.visible = on;
-    const dt = Math.min(0.07, delta);
-    elapsed.current += dt * 1000;
+    // Movimiento con pasos acotados; el reloj de salidas sigue el tiempo real aunque haya pocos
+    // fotogramas por segundo (si no, con 2 fps los camiones saldrían siete veces más despacio).
+    const dt = Math.min(MAX_MOVE_STEP, delta);
+    const tick = Math.min(MAX_CLOCK_STEP, delta);
+    elapsed.current += tick * 1000;
     if (on) {
-      wait.current -= dt;
+      wait.current -= tick;
       if (wait.current <= 0) {
         launch();
         wait.current = 2.1 + Math.random() * 1.7;

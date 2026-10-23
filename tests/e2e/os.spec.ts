@@ -50,7 +50,7 @@ test.describe('F3 · sistema y ciudad viva', () => {
   test('carril: Stadt ↔ Leitstand con agentes, actividad y estado del sistema', async ({ page }) => {
     await openCity(page);
     await page.locator('.module-rail').getByRole('link', { name: 'Leitstand' }).click();
-    await expect(page).toHaveURL(/\/leitstand$/);
+    await expect(page).toHaveURL(/\/leitstand$/, { timeout: 15_000 }); // con WebGL por software el hilo principal va lento
     await expect(page.locator('.module-rail [aria-current="page"]')).toHaveText('Leitstand');
     await expect(page.locator('[data-agent]')).toHaveCount(13);
     await expect(page.locator('.stat')).toHaveCount(5);

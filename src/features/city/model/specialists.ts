@@ -61,12 +61,12 @@ export interface PavilionLot {
 
 /** Solares libres para pabellones (D14), elegidos con `clearance()` y comprobados en las pruebas. */
 export const PAVILION_LOTS: readonly PavilionLot[] = deepFreeze([
-  { id: 'i1', district: 'industrial', x: -10, z: -8.25 },
+  { id: 'i1', district: 'industrial', x: -9.6, z: -8 },
   { id: 'i2', district: 'industrial', x: -12.5, z: 10.5 },
   { id: 'i3', district: 'industrial', x: -15.5, z: -3.1 },
-  { id: 'i4', district: 'industrial', x: -10, z: 2.9 },
+  { id: 'i4', district: 'industrial', x: -9.4, z: 4.2 },
   { id: 'i5', district: 'industrial', x: 12.5, z: -3.75 },
-  { id: 'i6', district: 'industrial', x: 14.75, z: 6.5 },
+  { id: 'i6', district: 'industrial', x: 19, z: 4.5 },
   { id: 'i7', district: 'industrial', x: 19.25, z: 0.75 },
-  { id: 'i8', district: 'industrial', x: 7.25, z: 3.25 },
+  { id: 'i8', district: 'industrial', x: 10.5, z: -1.5 },
 ]);

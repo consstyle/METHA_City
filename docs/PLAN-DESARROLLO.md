@@ -175,20 +175,22 @@ Imagen Docker (`output: standalone`), servicio en Dokploy, acceso con usuario y 
 | D24 | Vida de la demo | Solo datos simulados. Tras la sesión de comentarios se cambia la contraseña o se para el servicio. Cada navegador guarda sus propios datos (localStorage): no hay datos compartidos entre usuarios. |
 
 ### F5c · La ciudad es el campus; los proyectos, obras alrededor
-Concepto (decidido con el usuario): **Bau** y **Bauleitung** pertenecen a un proyecto, no a la empresa. La ciudad muestra solo el campus de METHABAU y cada proyecto activo de MethaDesk es una obra fuera de la isla, unida por carretera, con su propia Projektleitung y Bauleitung.
+Concepto (decidido con el usuario): **Bau** y **Bauleitung** pertenecen a un proyecto, no a la empresa. La ciudad muestra solo el campus de METHABAU y cada proyecto activo de MethaDesk es una obra fuera de la isla, unida a AVOR por su propia calle, con su propia Projektleitung y Bauleitung.
 
 | # | Decisión | Elegido |
 |---|---|---|
 | D25 | Campus | AVOR, **Planer** (edificio propio, de él salen los TS «Plan fertig»), Einkauf, Schlosserei, Blech y Werkhof. Desaparecen los edificios Projektleitung, Bauleitung y Bau. |
-| D26 | Obras | **Todos los proyectos activos** (no archivados) de `mc.projekt_kennzahlen`, cada uno en su plataforma **alrededor de la isla**, unida por una carretera desde el anillo vial. Si hay muchos, el anillo de obras se aleja para que quepan. |
+| D26 | Obras | **Todos los proyectos activos** (no archivados) de `mc.projekt_kennzahlen`, cada uno en su plataforma **alrededor de la isla**, unida a AVOR por su propia calle recta. Si hay muchos, cuelgan de la calle de otra obra o se ponen en fila detrás de las de la costa. |
 | D27 | En cada obra | La obra (grúa, estructura, contenedores) y dos oficinas de obra conectadas: **Projektleitung** y **Bauleitung** del proyecto. |
 | D28 | Agentes | **Un par por proyecto**: «Projektleitung DEV-001» y «Bauleitung DEV-001». El Chief delega en AVOR y en cada Projektleitung; Projektleitung → Bauleitung; AVOR se coordina con cada Bauleitung. |
-| D29 | Flujo de TS | Planer → AVOR (Plan fertig) → talleres → AVOR → **obra del proyecto** (fertig), por la carretera de esa obra. |
+| D29 | Flujo de TS | Planer → AVOR (Plan fertig) → talleres → AVOR → **obra del proyecto** (fertig), cada movimiento por su calle directa. |
 
 Notas de implementación:
 - Los departamentos de MethaDesk `projektleiter`, `bauleiter`, `montage`, `bau` y `subunternehmer` ya no suman en ningún edificio del campus: sus números se ven por proyecto (`mc.projekt_kennzahlen`).
 - Los solares de pabellones de especialistas son los 8 del campus; las obras no tienen pabellones.
-- El encuadre inicial de la cámara crece para que entren las obras (`sceneExtent`); las rutas de los camiones evitan los tramos que rozan una fachada.
+- **Calles directas** (sin anillo vial ni avenidas): cada edificio tiene una calle recta hasta AVOR y cada obra la suya desde AVOR. Todos los movimientos de TS empiezan o acaban en AVOR, así que cada camión recorre una sola calle y se ve de dónde sale y adónde va. Sin tráfico de adorno.
+- Las obras se colocan donde más se ven en la vista inicial y donde su calle no pisa edificios, jardines, árboles, aparcamientos ni solares (`siteLayout.ts`). Si no queda dirección libre, la calle puede pasar por plantas o coches aparcados, que entonces no se dibujan; con muchos proyectos, las obras cuelgan de la calle de otra con un ramal por fuera de la isla o forman anillos exteriores.
+- El encuadre se abre solo lo justo para ver las obras (proyección de la cámara por defecto, con margen para el título y la barra): con los 3 proyectos del simulador, la ciudad se ve un 25 % más grande que con el anillo de obras.
 - Proyectos de ejemplo del simulador: GAZ Ausbildungszentrum (Beringen), Innloc AG (Rothenburg) y BB20 (Wädenswil), con cifras inventadas.
 
 ### F6 · Operación — *V1*

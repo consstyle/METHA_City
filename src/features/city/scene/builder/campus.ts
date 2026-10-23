@@ -8,7 +8,7 @@ import { buildIndustrial } from './archetypes/industrial';
 import { buildOffice, buildTerrace, buildTower } from './archetypes/offices';
 import { buildSite } from './archetypes/site';
 import { buildTerrain } from './terrain';
-import { buildParking, buildTraffic } from './vehicles';
+import { buildParking } from './vehicles';
 import { buildRoutes } from './links';
 import { buildProjectSites, SITE_LABEL_HEIGHT } from './projectSites';
 
@@ -37,7 +37,8 @@ function selectionRing(u: RingTarget): THREE.Mesh {
  */
 export function buildCampus(units: readonly UnitDef[], relations: readonly RelationDef[], sites: readonly ProjectSite[] = []) {
   const b = createSceneBuilder();
-  const { ringPath } = buildTerrain(b);
+  const siteRoads = sites.map((s) => s.road);
+  buildTerrain(b, siteRoads);
 
   const rings = new Map<string, THREE.Mesh>();
   for (const u of units) {
@@ -51,7 +52,7 @@ export function buildCampus(units: readonly UnitDef[], relations: readonly Relat
     b.box(x, 0.275, z + d / 2 + 0.35, w * 0.7, 0.018, 0.025, b.M.orange);
   }
 
-  buildParking(b);
+  buildParking(b, siteRoads);
   // Las obras no usan la semilla aleatoria: la ciudad queda igual con o sin proyectos.
   buildProjectSites(b, sites);
   for (const s of sites) {
@@ -73,7 +74,6 @@ export function buildCampus(units: readonly UnitDef[], relations: readonly Relat
     b.root.add(halo);
   }
 
-  const cars = buildTraffic(b);
   const labelAnchors = new Map<string, THREE.Vector3>([
     ...units.map((u) => [u.id, new THREE.Vector3(u.position.x, labelAnchorHeight(u), u.position.z)] as const),
     ...sites.map((s) => [s.id, new THREE.Vector3(s.building.x, SITE_LABEL_HEIGHT, s.building.z)] as const),
@@ -83,10 +83,8 @@ export function buildCampus(units: readonly UnitDef[], relations: readonly Relat
     root: b.root,
     pickables: b.pickables,
     materials: b.M,
-    ringPath,
     rings,
     routes,
-    cars,
     labelAnchors,
     dispose: () => {
       disposeObject(b.root);

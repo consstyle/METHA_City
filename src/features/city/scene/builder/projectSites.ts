@@ -1,20 +1,18 @@
 import * as THREE from 'three';
-import { ISLAND, wobblyEllipsePoint } from '@/features/city/model/island';
 import { SITE_PLATFORM, type Point, type ProjectSite } from '@/features/city/model/projects';
 import type { SceneBuilder } from './builder';
+import { buildSiteRoads } from './streetBuild';
 
 /**
- * Obras de los proyectos (F5c, D26–D27) alrededor de la isla: plataforma, carretera desde el anillo
- * vial sobre pilares, la obra (forjados, pilares, grúa) y las oficinas de obra de Projektleitung y
- * Bauleitung. Todo con `b.box` (instanciado): las obras no añaden llamadas de dibujo.
+ * Obras de los proyectos (F5c, D26–D27) alrededor de la isla: plataforma, su calle desde AVOR (sobre
+ * pilares fuera de la isla), la obra (forjados, pilares, grúa) y las oficinas de obra de Projektleitung
+ * y Bauleitung. Todo con `b.box` (instanciado): las obras no añaden llamadas de dibujo.
  */
 
 /** Oficina de obra (contenedor) de la Projektleitung o la Bauleitung. */
 export const OFFICE = { w: 2.6, d: 1.3, h: 1.25 } as const;
-const PILLAR_STEP = 2.6;
 
 const sub = (a: Point, b: Point): Point => ({ x: a.x - b.x, z: a.z - b.z });
-const len = (p: Point) => Math.hypot(p.x, p.z);
 
 /** Pieza en coordenadas locales de la obra (giradas con ry alrededor de `origin`). */
 function placer(b: SceneBuilder, origin: Point, ry: number) {
@@ -22,35 +20,6 @@ function placer(b: SceneBuilder, origin: Point, ry: number) {
   const sin = Math.sin(ry);
   return (lx: number, y: number, lz: number, w: number, h: number, d: number, m: THREE.Material) =>
     b.box(origin.x + lx * cos + lz * sin, y, origin.z - lx * sin + lz * cos, w, h, d, m, ry);
-}
-
-function buildRoad(b: SceneBuilder, site: ProjectSite): void {
-  const { M } = b;
-  const [start, end] = site.road;
-  const dir = sub(end, start);
-  const l = len(dir);
-  const ry = Math.atan2(dir.x, dir.z);
-  const at = (t: number): Point => ({ x: start.x + dir.x * t, z: start.z + dir.z * t });
-  const mid = at(0.5);
-  b.box(mid.x, 0.075, mid.z, 1.4, 0.03, l, M.road, ry);
-  for (const side of [-0.75, 0.75]) {
-    const off = { x: Math.cos(ry) * side, z: -Math.sin(ry) * side };
-    b.box(mid.x + off.x, 0.09, mid.z + off.z, 0.1, 0.05, l, M.curb, ry);
-  }
-  for (let t = 0.04; t < 1; t += 1.3 / l) {
-    const p = at(t);
-    b.box(p.x, 0.093, p.z, 0.045, 0.015, 0.45, M.paint, ry);
-  }
-  // Tramo fuera de la isla: tablero y pilares hasta el suelo.
-  const edge = wobblyEllipsePoint(ISLAND.rx, ISLAND.rz, site.angle);
-  const from = Math.max(0, Math.min(1, len(sub(edge, start)) / l - 0.04));
-  const deckLen = (1 - from) * l;
-  const deckMid = at(from + (1 - from) / 2);
-  b.box(deckMid.x, -0.2, deckMid.z, 1.9, 0.5, deckLen, M.edge, ry);
-  for (let d = 0.6; d < deckLen - 0.4; d += PILLAR_STEP) {
-    const p = at(from + d / l);
-    b.box(p.x, -1.05, p.z, 0.32, 1.6, 0.32, M.darkSteel, ry);
-  }
 }
 
 function buildPlatform(b: SceneBuilder, site: ProjectSite, ry: number): void {
@@ -101,11 +70,11 @@ export const SITE_LABEL_HEIGHT = 6.3;
 
 export function buildProjectSites(b: SceneBuilder, sites: readonly ProjectSite[]): void {
   const pickMaterial = new THREE.MeshBasicMaterial({ visible: false });
+  buildSiteRoads(b, sites.map((s) => s.road));
   for (const site of sites) {
-    // La plataforma mira a la isla: su eje de fondo apunta hacia fuera.
-    const out = sub(site.position, site.road[1]);
+    // El frente de la plataforma da a la calle que llega; su eje de fondo apunta hacia fuera.
+    const out = sub(site.position, site.road.at(-1) ?? site.position);
     const ry = Math.atan2(out.x, out.z);
-    buildRoad(b, site);
     buildPlatform(b, site, ry);
     buildWorks(b, site, ry);
     buildOffice(b, site.offices.pl, ry);

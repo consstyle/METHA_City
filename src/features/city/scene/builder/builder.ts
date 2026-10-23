@@ -103,33 +103,6 @@ export function createSceneBuilder() {
     return c;
   }
 
-  /** Cinta plana a lo largo de una curva (carreteras, bordillos, pasarela). */
-  function ribbon(c: THREE.Curve<THREE.Vector3>, width: number, material: THREE.Material, y = 0) {
-    const positions: number[] = [];
-    const normals: number[] = [];
-    const uvs: number[] = [];
-    const indices: number[] = [];
-    const steps = 160;
-    for (let i = 0; i <= steps; i++) {
-      const p = c.getPoint(i / steps);
-      const t = c.getTangent(i / steps);
-      const side = new THREE.Vector3(-t.z, 0, t.x).normalize();
-      for (let j = 0; j < 2; j++) {
-        const q = p.clone().addScaledVector(side, ((j ? 1 : -1) * width) / 2);
-        positions.push(q.x, q.y + y, q.z);
-        normals.push(0, 1, 0);
-        uvs.push(j, (i / steps) * 20);
-      }
-      if (i < steps) indices.push(i * 2, i * 2 + 1, i * 2 + 2, i * 2 + 1, i * 2 + 3, i * 2 + 2);
-    }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    g.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-    g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-    g.setIndex(indices);
-    return mesh(g, material);
-  }
-
   /** Cartel con el nombre del edificio (textura de canvas). */
   function sign(text: string, x: number, y: number, z: number, w = 2.8, ry = 0) {
     const canvas = document.createElement('canvas');
@@ -181,7 +154,7 @@ export function createSceneBuilder() {
     shapes.clear();
   }
 
-  return { root, pickables, M, boxGeo, rnd, box, mesh, shape, cylinder, line, ribbon, sign, commit };
+  return { root, pickables, M, boxGeo, rnd, box, mesh, shape, cylinder, line, sign, commit };
 }
 
 export type SceneBuilder = ReturnType<typeof createSceneBuilder>;
